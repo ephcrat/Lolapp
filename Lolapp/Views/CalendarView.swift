@@ -1,14 +1,41 @@
 import SwiftUI
+import SwiftData // Import SwiftData
 
 struct CalendarView: View {
     // State variable to keep track of the month being displayed.
     // It defaults to the current month when the view first appears.
     @State private var displayMonth: Date = Date()
 
+    // SwiftData Query: Fetches all DailyLog objects, sorted by date.
+    // We will filter this array later based on the displayMonth.
+    // The `sort:` parameter ensures the data is ordered.
+    @Query(sort: \DailyLog.date) private var dailyLogs: [DailyLog]
+
     // Access the system's calendar
     private let calendar: Calendar = Calendar.current
     // Define the grid columns for the days (7 days a week)
     private let columns: [GridItem] = Array(repeating: .init(.flexible()), count: 7)
+
+    // Computed property to create a lookup dictionary from the logs
+    // This dictionary maps a normalized Date (start of day) to its DailyLog.
+    // It recalculates whenever dailyLogs or displayMonth changes.
+    private var logsForMonthDict: [Date: DailyLog] {
+        // Filter logs for the currently displayed month for efficiency
+        guard let monthInterval: DateInterval = calendar.dateInterval(of: .month, for: displayMonth) else {
+            return [:]
+        }
+        
+        let logsInMonth: [DailyLog] = dailyLogs.filter { log in
+            // Ensure log date is within the month interval
+            // Note: DailyLog dates are already normalized to start of day in the initializer
+            return log.date >= monthInterval.start && log.date < monthInterval.end
+        }
+        
+        // Create the dictionary [Date: DailyLog]
+        // Using Dictionary(uniqueKeysWithValues:) is efficient.
+        // We assume dates are unique due to the @Attribute(.unique) on DailyLog.date
+        return Dictionary(uniqueKeysWithValues: logsInMonth.map { ($0.date, $0) })
+    }
 
     var body: some View {
         NavigationView { // Embed in NavigationView for title and potential future navigation
@@ -34,16 +61,15 @@ struct CalendarView: View {
                 .padding(.horizontal)
 
                 // Calendar Grid
-                LazyVGrid(columns: columns, spacing: 15) {
+                LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(daysInMonth(), id: \.self) { date in
-                        // Placeholder for each day cell
-                        // We'll replace this with a proper DayCellView later
                         if let date: Date = date {
-                            Text("\(calendar.component(.day, from: date))")
-                                .frame(maxWidth: .infinity, minHeight: 50)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(8)
-                                // TODO: Add tap gesture later for navigation
+                            // Look up the log for this date in our dictionary
+                            let logForDay: DailyLog? = logsForMonthDict[date]
+                            
+                            // Use DayCellView, passing the date and the found log (or nil)
+                            DayCellView(date: date, dailyLog: logForDay)
+                                // TODO: Add tap gesture/NavigationLink here later
                         } else {
                             // Empty cell for days outside the current month
                             Rectangle()
@@ -58,6 +84,18 @@ struct CalendarView: View {
             }
             .navigationTitle("Calendar") // Title for the view
             // .navigationBarTitleDisplayMode(.inline) // Removed for potential macOS compatibility
+        }
+        // Re-calculate the dictionary when the displayed month changes
+        .onChange(of: displayMonth) { _, _ in
+            // The dictionary `logsForMonthDict` is computed on demand,
+            // so just accessing it implicitly handles the update when
+            // the grid redraws after displayMonth changes.
+            // No explicit action needed here, but onChange is useful for debugging
+            // or triggering other side effects if necessary.
+        }
+        // Also re-calculate if the underlying log data changes
+        .onChange(of: dailyLogs) { _, _ in
+             // Same as above, the computed property handles this automatically.
         }
     }
 
@@ -157,5 +195,27 @@ struct CalendarHeaderView: View {
 
 // Preview Provider for Xcode Canvas
 #Preview {
-    CalendarView()
+    // To make the preview work with @Query, we need to provide a ModelContainer.
+    // Using an in-memory container is best practice for previews.
+    do {
+        let config: ModelConfiguration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container: ModelContainer = try ModelContainer(for: DailyLog.self, configurations: config)
+
+        // Add multiple sample logs for better preview testing
+        let todayLog = DailyLog(date: Date(), coughCount: 1, isPrednisoneScheduled: true)
+        let yesterdayLog = DailyLog(date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!, coughCount: 4, isPrednisoneScheduled: false)
+        let twoDaysAgoLog = DailyLog(date: Calendar.current.date(byAdding: .day, value: -2, to: Date())!, coughCount: 0, isPrednisoneScheduled: true)
+        let fiveDaysAgoLog = DailyLog(date: Calendar.current.date(byAdding: .day, value: -5, to: Date())!, coughCount: 7, isPrednisoneScheduled: false)
+        
+        container.mainContext.insert(todayLog)
+        container.mainContext.insert(yesterdayLog)
+        container.mainContext.insert(twoDaysAgoLog)
+        container.mainContext.insert(fiveDaysAgoLog)
+
+        return CalendarView()
+            .modelContainer(container) // Provide the container to the view
+    } catch {
+        // Handle error creating the container (e.g., display an error message)
+        fatalError("Failed to create model container for preview: \(error.localizedDescription)")
+    }
 } 
