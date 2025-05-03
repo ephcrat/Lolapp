@@ -19,8 +19,13 @@ struct CalendarView: View {
                 // Day of the Week Labels
                 HStack {
                     // Using short symbols for brevity (e.g., S, M, T)
-                    ForEach(calendar.veryShortWeekdaySymbols, id: \.self) { day in
-                        Text(day)
+                    // Get the symbols array first
+                    let weekdaySymbols: [String] = calendar.veryShortWeekdaySymbols
+                    // Iterate over the indices (0 to 6) which are unique
+                    ForEach(weekdaySymbols.indices, id: \.self) { index in
+                        // Get the symbol using the index
+                        let symbol: String = weekdaySymbols[index]
+                        Text(symbol)
                             .frame(maxWidth: .infinity)
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -33,7 +38,7 @@ struct CalendarView: View {
                     ForEach(daysInMonth(), id: \.self) { date in
                         // Placeholder for each day cell
                         // We'll replace this with a proper DayCellView later
-                        if let date = date {
+                        if let date: Date = date {
                             Text("\(calendar.component(.day, from: date))")
                                 .frame(maxWidth: .infinity, minHeight: 50)
                                 .background(Color.gray.opacity(0.1))
@@ -137,7 +142,7 @@ struct CalendarHeaderView: View {
     // Function to change the displayed month
     private func changeMonth(by months: Int) {
         // Use the calendar to safely add/subtract months
-        if let newMonth = calendar.date(byAdding: .month, value: months, to: displayMonth) {
+        if let newMonth: Date = calendar.date(byAdding: .month, value: months, to: displayMonth) {
             displayMonth = newMonth
         }
     }
