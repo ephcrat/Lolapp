@@ -38,6 +38,7 @@ final class DailyLog {
     var coughCount: Int
     var notes: String? // String? means it's an optional String, can be nil.
     var softFoodGivenGrams: Int
+    var softFoodTargetGrams: Int // Added target property
 
     // Prednisone specific tracking
     var isPrednisoneScheduled: Bool
@@ -64,6 +65,7 @@ final class DailyLog {
          coughCount: Int = 0,
          notes: String? = nil,
          softFoodGivenGrams: Int = 0,
+         softFoodTargetGrams: Int = 300, // Added default value here
          isPrednisoneScheduled: Bool = false,
          prednisoneDosageDrops: Int? = nil,
          prednisoneFrequency: Frequency? = nil,
@@ -83,6 +85,7 @@ final class DailyLog {
         self.coughCount = coughCount
         self.notes = notes
         self.softFoodGivenGrams = softFoodGivenGrams
+        self.softFoodTargetGrams = softFoodTargetGrams // Initialize the property
         self.isPrednisoneScheduled = isPrednisoneScheduled
         self.prednisoneDosageDrops = prednisoneDosageDrops
         self.prednisoneFrequency = prednisoneFrequency
@@ -109,6 +112,6 @@ final class DailyLog {
      // It calls the main `init` method, passing in the current date.
      // This is useful for quickly creating a log entry for the present day.
      convenience init() {
-         self.init(date: Date())
+         self.init(date: Date()) // Still uses defaults, including target=300
      }
 }

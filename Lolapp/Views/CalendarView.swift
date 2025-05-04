@@ -63,18 +63,23 @@ struct CalendarView: View {
                 // Calendar Grid
                 LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(daysInMonth(), id: \.self) { date in
-                        if let date: Date = date {
+                        if let date = date {
                             // Look up the log for this date in our dictionary
-                            let logForDay: DailyLog? = logsForMonthDict[date]
+                            let logForDay = logsForMonthDict[date]
                             
-                            // Use DayCellView, passing the date and the found log (or nil)
-                            DayCellView(date: date, dailyLog: logForDay)
-                                // TODO: Add tap gesture/NavigationLink here later
+                            // Wrap the DayCellView in a NavigationLink
+                            NavigationLink(destination: DayDetailView(selectedDate: date)) {
+                                // The DayCellView is the label (tappable content) for the link
+                                DayCellView(date: date, dailyLog: logForDay)
+                            }
+                            // Make the link style plain to avoid default button appearance (like blue text)
+                            .buttonStyle(.plain)
+                            
                         } else {
-                            // Empty cell for days outside the current month
+                            // Empty cell for padding days
                             Rectangle()
                                 .fill(Color.clear)
-                                .frame(maxWidth: .infinity, minHeight: 50)
+                                .frame(maxWidth: .infinity, minHeight: 50) // Ensure same height as DayCellView
                         }
                     }
                 }
