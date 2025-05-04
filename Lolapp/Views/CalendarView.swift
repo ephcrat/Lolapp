@@ -45,13 +45,20 @@ struct CalendarView: View {
 
                 // Day of the Week Labels
                 HStack {
-                    // Using short symbols for brevity (e.g., S, M, T)
-                    // Get the symbols array first
+                    // Get the symbols array first, and ensure their order matches how we calculate dates
                     let weekdaySymbols: [String] = calendar.veryShortWeekdaySymbols
-                    // Iterate over the indices (0 to 6) which are unique
-                    ForEach(weekdaySymbols.indices, id: \.self) { index in
-                        // Get the symbol using the index
-                        let symbol: String = weekdaySymbols[index]
+                    
+                    // Check if the calendar's first weekday is different than the default
+                    // Most calendars start Sunday (1) but some may be configured to start Monday (2)
+                    // The indices are 1-based in Calendar but we need 0-based for our array
+                    let firstWeekdayIndex = calendar.firstWeekday - 1
+                    
+                    // Get the correctly ordered weekday symbols based on the calendar's first weekday setting
+                    let orderedSymbols = Array(weekdaySymbols[firstWeekdayIndex..<weekdaySymbols.count] + weekdaySymbols[0..<firstWeekdayIndex])
+                    
+                    // Use these reordered symbols for display
+                    ForEach(orderedSymbols.indices, id: \.self) { index in
+                        let symbol: String = orderedSymbols[index]
                         Text(symbol)
                             .frame(maxWidth: .infinity)
                             .font(.caption)
@@ -108,39 +115,57 @@ struct CalendarView: View {
     // for days outside the current month to align weeks correctly.
     private func daysInMonth() -> [Date?] {
         guard let monthInterval: DateInterval = calendar.dateInterval(of: .month, for: displayMonth),
-              let monthFirstWeek: DateInterval = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.start),
-              // Get the last day of the month safely (it's optional)
-              let lastDayOfMonth: Date = calendar.date(byAdding: .day, value: -1, to: monthInterval.end),
-              // Now use the unwrapped lastDayOfMonth to get the week interval
-              let monthLastWeek: DateInterval = calendar.dateInterval(of: .weekOfMonth, for: lastDayOfMonth)
+              let firstDayOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: monthInterval.start))
         else {
-            // If any of these calculations fail, return an empty array
             return []
         }
-
+        
+        // Calculate the first visible day in the calendar grid
+        // This should be the first day of the week that contains the first day of the month
+        var startDateComponents = calendar.dateComponents([.year, .month, .day, .weekday], from: firstDayOfMonth)
+        let weekdayOffset = (7 + startDateComponents.weekday! - calendar.firstWeekday) % 7
+        startDateComponents.day = startDateComponents.day! - weekdayOffset
+        
+        guard let startDate = calendar.date(from: startDateComponents) else {
+            return []
+        }
+        
+        // Calculate the last visible day in the calendar grid
+        // This should be the last day of the week that contains the last day of the month
+        guard let lastDayOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: firstDayOfMonth),
+              var endDateComponents = calendar.dateComponents([.year, .month, .day, .weekday], from: lastDayOfMonth) as DateComponents?
+        else {
+            return []
+        }
+        
+        let daysToAdd = (7 - ((endDateComponents.weekday! - calendar.firstWeekday + 7) % 7)) % 7
+        endDateComponents.day = endDateComponents.day! + daysToAdd
+        
+        guard let endDate = calendar.date(from: endDateComponents) else {
+            return []
+        }
+        
+        // Create the array of dates (and nil placeholders) for the entire visible calendar
         var days: [Date?] = []
-        let startDate: Date = monthFirstWeek.start
-        let endDate: Date = monthLastWeek.end
-
-        // Iterate day by day from the start of the first week to the end of the last week.
-        var currentDate: Date = startDate
-        while currentDate < endDate {
-            // If the day falls within the target month, add it.
+        var currentDate = startDate
+        
+        // Use a consistent way to add days
+        while currentDate <= endDate {
+            // If the date is within our target month, add the actual date
             if currentDate >= monthInterval.start && currentDate < monthInterval.end {
                 days.append(currentDate)
             } else {
-                // Otherwise, add nil as a placeholder for empty cells in the grid.
+                // Otherwise add nil for days outside the current month
                 days.append(nil)
             }
-
-            // Safely move to the next day.
-            guard let nextDay: Date = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
-                // This should theoretically never happen when just adding 1 day,
-                // but it's good practice to handle the optional.
-                break // Exit loop if we somehow can't calculate the next day
+            
+            // Move to the next day safely
+            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+                break
             }
-            currentDate = nextDay
+            currentDate = nextDate
         }
+        
         return days
     }
 }
