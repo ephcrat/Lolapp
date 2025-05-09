@@ -59,6 +59,18 @@ struct SoftFoodSectionView: View {
                     }
                     .disabled(!isValidInput())
                 }
+                
+                // Reset Button
+                if log.softFoodGivenGrams > 0 {
+                    HStack {
+                        Spacer()
+                        Button("Reset Food for Today", role: .destructive) {
+                            resetFood()
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 5)
+                }
             }
         }
         // .padding(.bottom)
@@ -82,6 +94,15 @@ struct SoftFoodSectionView: View {
         log.softFoodGivenGrams += amount
         // Clear the text field after adding
         foodToAddText = ""
+    }
+
+    /// Resets the food given for the day to 0.
+    private func resetFood() {
+        log.softFoodGivenGrams = 0
+        // After resetting, immediately clear the input field as well
+        foodToAddText = ""
+        // The DayDetailView's .onChange for softFoodGivenGrams will handle calling
+        // checkIfLogShouldBeDeleted if appropriate.
     }
 }
 
