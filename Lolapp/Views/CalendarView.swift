@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData // Import SwiftData
 
 struct CalendarView: View {
+    // Environment variable to detect app lifecycle changes
+    @Environment(\.scenePhase) private var scenePhase: ScenePhase
+    
     // State variable to keep track of the month being displayed.
     // It defaults to the current month when the view first appears.
     @State private var displayMonth: Date = Date()
@@ -15,6 +18,11 @@ struct CalendarView: View {
     private let calendar: Calendar = Calendar.current
     // Define the grid columns for the days (7 days a week)
     private let columns: [GridItem] = Array(repeating: .init(.flexible()), count: 7)
+
+    // We need a way to tell DayCellView to re-evaluate isToday
+    // This is a @State variable that we toggle to force redraws
+    // when the app becomes active and the day might have changed.
+    @State private var appBecameActiveTrigger: Bool = false
 
     // Computed property to create a lookup dictionary from the logs
     // This dictionary maps a normalized Date (start of day) to its DailyLog.
@@ -71,22 +79,15 @@ struct CalendarView: View {
                 LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(daysInMonth(), id: \.self) { date in
                         if let date = date {
-                            // Look up the log for this date in our dictionary
                             let logForDay = logsForMonthDict[date]
-                            
-                            // Wrap the DayCellView in a NavigationLink
                             NavigationLink(destination: DayDetailView(selectedDate: date)) {
-                                // The DayCellView is the label (tappable content) for the link
-                                DayCellView(date: date, dailyLog: logForDay)
+                                DayCellView(date: date, dailyLog: logForDay, appBecameActiveTrigger: appBecameActiveTrigger)
                             }
-                            // Make the link style plain to avoid default button appearance (like blue text)
                             .buttonStyle(.plain)
-                            
                         } else {
-                            // Empty cell for padding days
                             Rectangle()
                                 .fill(Color.clear)
-                                .frame(maxWidth: .infinity, minHeight: 50) // Ensure same height as DayCellView
+                                .frame(maxWidth: .infinity, minHeight: 50)
                         }
                     }
                 }
@@ -108,6 +109,22 @@ struct CalendarView: View {
         // Also re-calculate if the underlying log data changes
         .onChange(of: dailyLogs) { _, _ in
              // Same as above, the computed property handles this automatically.
+        }
+        // Add onChange for scenePhase
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .active {
+                print("App became active. Forcing DayCellView refresh.")
+                // Toggle the state variable to force DayCellView to re-evaluate isToday
+                appBecameActiveTrigger.toggle()
+                
+                // Additionally, if the displayMonth is no longer the current actual month,
+                // reset displayMonth to the current month to ensure calendar is up-to-date.
+                let today = Date()
+                if !calendar.isDate(displayMonth, equalTo: today, toGranularity: .month) {
+                    print("App active and displayMonth is stale. Resetting to current month.")
+                    displayMonth = today
+                }
+            }
         }
     }
 

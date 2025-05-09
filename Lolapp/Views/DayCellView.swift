@@ -4,7 +4,7 @@ import SwiftData
 struct DayCellView: View {
     let date: Date
     let dailyLog: DailyLog? // The log for this specific date, if it exists
-  
+    let appBecameActiveTrigger: Bool // Trigger to force a re-evaluation of isToday
 
     private let calendar: Calendar = Calendar.current
     private var isToday: Bool {
@@ -68,14 +68,14 @@ struct DayCellView: View {
 
 #Preview("No Log") {
     // Preview for a day with no log entry
-    DayCellView(date: Date(), dailyLog: nil)
+    DayCellView(date: Date(), dailyLog: nil, appBecameActiveTrigger: false)
         .padding()
 }
 
 #Preview("Today With Log") {
     // Preview for today with a sample log
     let log: DailyLog = DailyLog(date: Date(), coughCount: 4, isPrednisoneScheduled: true)
-    return DayCellView(date: Date(), dailyLog: log)
+    return DayCellView(date: Date(), dailyLog: log, appBecameActiveTrigger: false)
         .padding()
 }
 
@@ -83,6 +83,6 @@ struct DayCellView: View {
     // Preview for another day with a log but no prednisone
     let date: Date = Calendar.current.date(byAdding: .day, value: -5, to: Date())!
     let log: DailyLog = DailyLog(date: date, coughCount: 1)
-    return DayCellView(date: date, dailyLog: log)
+    return DayCellView(date: date, dailyLog: log, appBecameActiveTrigger: false)
         .padding()
 } 
