@@ -4,6 +4,7 @@ import SwiftData // Import SwiftData
 struct CalendarView: View {
     // Environment variable to detect app lifecycle changes
     @Environment(\.scenePhase) private var scenePhase: ScenePhase
+    @Environment(\.modelContext) private var modelContext // Add modelContext
     
     // State variable to keep track of the month being displayed.
     // It defaults to the current month when the view first appears.
@@ -97,6 +98,17 @@ struct CalendarView: View {
             }
             .navigationTitle("Calendar") // Title for the view
             // .navigationBarTitleDisplayMode(.inline) // Removed for potential macOS compatibility
+            // Add a toolbar for the quick action button
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) { // Place on the right
+                    Button {
+                        addCoughForToday()
+                    } label: {
+                        Label("Add Cough for Today", systemImage: "plus.circle.fill")
+                            .symbolRenderingMode(.multicolor) // Makes the plus green within the circle
+                    }
+                }
+            }
         }
         // Re-calculate the dictionary when the displayed month changes
         .onChange(of: displayMonth) { _, _ in
@@ -184,6 +196,26 @@ struct CalendarView: View {
         }
         
         return days
+    }
+
+    /// Finds or creates a DailyLog for today and increments its cough count.
+    private func addCoughForToday() {
+        let today = calendar.startOfDay(for: Date()) // Normalize today's date
+        
+        // Try to find an existing log for today from our fetched dailyLogs
+        // The dailyLogs @Query is already sorted by date, but we need to find the specific one for today.
+        // A more robust find would be to iterate, or if we had a dictionary like logsForMonthDict that covered all fetched logs.
+        // For simplicity, we'll search the array.
+        if let existingLogForToday = dailyLogs.first(where: { calendar.isDate($0.date, inSameDayAs: today) }) {
+            existingLogForToday.coughCount += 1
+            print("Incremented cough for existing log on \(today). New count: \(existingLogForToday.coughCount)")
+        } else {
+            // If no log exists, create a new one with coughCount = 1 and insert it.
+            let newLog = DailyLog(date: today, coughCount: 1)
+            modelContext.insert(newLog)
+            print("Created new log for today (\(today)) with 1 cough.")
+        }
+        
     }
 }
 
