@@ -46,15 +46,15 @@ struct DayCellView: View {
             return Color.gray.opacity(0.1) // Default background for days with no log
         }
 
-        // Map cough count to opacity (adjust these values as needed)
         let opacity: Double = switch log.coughCount {
             case 0: 0.1
-            case 1...2: 0.3
-            case 3...5: 0.5
-            default: 0.7 // For 6+ coughs
+            case 1: 0.35
+            case 2: 0.55
+            case 3: 0.75
+            case 4...6: 0.9
+            default: 1.0
         }
         
-        // You might want a different base color, e.g., blue or purple
         return Color.purple.opacity(opacity)
     }
 
