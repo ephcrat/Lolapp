@@ -82,25 +82,19 @@ struct DayDetailView: View {
                             }
                         
                         AsthmaMedSectionView(log: bindableLog, numberFormatter: numberFormatter)
-                            .onChange(of: bindableLog.isAsthmaMedScheduled) { _, isScheduled in
-                                ensureLogExists(log)
-                                if !isScheduled {
-                                    checkIfLogShouldBeDeleted(log)
-                                }
-                            }
-                            .onChange(of: bindableLog.asthmaMedDosagePuffs) { _, _ in
+                            .onChange(of: bindableLog.asthmaMedDosagePuffs) { _, newValue in
                                 ensureLogExists(log)
                                 checkIfLogShouldBeDeleted(log)
                             }
-                            .onChange(of: bindableLog.asthmaMedFrequency) { _, _ in
+                            .onChange(of: bindableLog.asthmaMedFrequency) { _, newValue in
                                 ensureLogExists(log)
                                 checkIfLogShouldBeDeleted(log)
                             }
-                            .onChange(of: bindableLog.didAdministerAsthmaMedDose1) { _, _ in
+                            .onChange(of: bindableLog.didAdministerAsthmaMedDose1) { _, newValue in
                                 ensureLogExists(log)
                                 checkIfLogShouldBeDeleted(log)
                             }
-                            .onChange(of: bindableLog.didAdministerAsthmaMedDose2) { _, _ in
+                            .onChange(of: bindableLog.didAdministerAsthmaMedDose2) { _, newValue in
                                 ensureLogExists(log)
                                 checkIfLogShouldBeDeleted(log)
                             }
@@ -195,7 +189,6 @@ struct DayDetailView: View {
             log.prednisoneFrequency == nil &&
             !log.didAdministerPrednisoneDose1 &&
             log.didAdministerPrednisoneDose2 == nil &&
-            !log.isAsthmaMedScheduled &&
             log.asthmaMedDosagePuffs == nil &&
             log.asthmaMedFrequency == nil &&
             !log.didAdministerAsthmaMedDose1 &&

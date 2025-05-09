@@ -38,21 +38,20 @@ final class DailyLog {
     var coughCount: Int
     var notes: String? // String? means it's an optional String, can be nil.
     var softFoodGivenGrams: Int
-    var softFoodTargetGrams: Int // Added target property
+    var softFoodTargetGrams: Int
 
     // Prednisone specific tracking
     var isPrednisoneScheduled: Bool
-    var prednisoneDosageDrops: Int? // Int? = Optional Int
-    var prednisoneFrequency: Frequency? // Optional Frequency enum
+    var prednisoneDosageDrops: Int?
+    var prednisoneFrequency: Frequency?
     var didAdministerPrednisoneDose1: Bool
-    var didAdministerPrednisoneDose2: Bool? // Optional Bool
+    var didAdministerPrednisoneDose2: Bool?
 
     // Asthma Medication specific tracking
-    var isAsthmaMedScheduled: Bool
-    var asthmaMedDosagePuffs: Int? // Optional Int
-    var asthmaMedFrequency: Frequency? // Optional Frequency enum
+    var asthmaMedDosagePuffs: Int?
+    var asthmaMedFrequency: Frequency?
     var didAdministerAsthmaMedDose1: Bool
-    var didAdministerAsthmaMedDose2: Bool? // Optional Bool
+    var didAdministerAsthmaMedDose2: Bool?
 
     // Timestamp for CloudKit conflict resolution. SwiftData uses this
     // field when syncing with iCloud to determine which version of the
@@ -65,15 +64,14 @@ final class DailyLog {
          coughCount: Int = 0,
          notes: String? = nil,
          softFoodGivenGrams: Int = 0,
-         softFoodTargetGrams: Int = 300, // Added default value here
+         softFoodTargetGrams: Int = 300,
          isPrednisoneScheduled: Bool = false,
          prednisoneDosageDrops: Int? = nil,
          prednisoneFrequency: Frequency? = nil,
          didAdministerPrednisoneDose1: Bool = false,
          didAdministerPrednisoneDose2: Bool? = false,
-         isAsthmaMedScheduled: Bool = false,
-         asthmaMedDosagePuffs: Int? = nil,
-         asthmaMedFrequency: Frequency? = nil,
+         asthmaMedDosagePuffs: Int? = 3,
+         asthmaMedFrequency: Frequency? = .onceADay,
          didAdministerAsthmaMedDose1: Bool = false,
          didAdministerAsthmaMedDose2: Bool? = false,
          lastModified: Date = Date()
@@ -85,7 +83,7 @@ final class DailyLog {
         self.coughCount = coughCount
         self.notes = notes
         self.softFoodGivenGrams = softFoodGivenGrams
-        self.softFoodTargetGrams = softFoodTargetGrams // Initialize the property
+        self.softFoodTargetGrams = softFoodTargetGrams
         self.isPrednisoneScheduled = isPrednisoneScheduled
         self.prednisoneDosageDrops = prednisoneDosageDrops
         self.prednisoneFrequency = prednisoneFrequency
@@ -95,11 +93,9 @@ final class DailyLog {
         // or be treated as irrelevant. We ensure it's nil if not twice a day.
         self.didAdministerPrednisoneDose2 = (prednisoneFrequency == .twiceADay) ? didAdministerPrednisoneDose2 : nil
 
-        self.isAsthmaMedScheduled = isAsthmaMedScheduled
         self.asthmaMedDosagePuffs = asthmaMedDosagePuffs
         self.asthmaMedFrequency = asthmaMedFrequency
         self.didAdministerAsthmaMedDose1 = didAdministerAsthmaMedDose1
-        // Same logic for asthma med dose 2.
         self.didAdministerAsthmaMedDose2 = (asthmaMedFrequency == .twiceADay) ? didAdministerAsthmaMedDose2 : nil
         self.lastModified = lastModified
 
