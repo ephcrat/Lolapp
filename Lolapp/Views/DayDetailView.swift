@@ -175,31 +175,32 @@ struct DayDetailView: View {
     
     /// Checks if the log should be deleted because all values are at defaults
     private func checkIfLogShouldBeDeleted(_ log: DailyLog) {
-        // Only proceed if this is a real log that's being tracked
         guard log == editingLog else { return }
         
-        // Check if all values are at their defaults
+        // Compare current log values against the global defaults
         let isAtDefaults = 
-            log.coughCount == 0 &&
-            log.notes == nil &&
-            log.softFoodGivenGrams == 0 &&
-            log.softFoodTargetGrams == 300 &&
-            !log.isPrednisoneScheduled &&
-            log.prednisoneDosageDrops == nil &&
-            log.prednisoneFrequency == nil &&
-            !log.didAdministerPrednisoneDose1 &&
-            log.didAdministerPrednisoneDose2 == nil &&
-            log.asthmaMedDosagePuffs == nil &&
-            log.asthmaMedFrequency == nil &&
-            !log.didAdministerAsthmaMedDose1 &&
-            log.didAdministerAsthmaMedDose2 == nil
+            log.coughCount == ModelDefaults.coughCount &&
+            log.notes == ModelDefaults.notes && // Handles nil comparison correctly
+            log.softFoodGivenGrams == ModelDefaults.softFoodGivenGrams &&
+            log.softFoodTargetGrams == ModelDefaults.softFoodTargetGrams &&
+            log.isPrednisoneScheduled == ModelDefaults.isPrednisoneScheduled &&
+            log.prednisoneDosageDrops == ModelDefaults.prednisoneDosageDrops &&
+            log.prednisoneFrequency == ModelDefaults.prednisoneFrequency &&
+            log.didAdministerPrednisoneDose1 == ModelDefaults.didAdministerPrednisoneDose1 &&
+            // For optional Bools that depend on frequency, their default is effectively nil if not .twiceADay
+            // The logic in DailyLog init and section views already handles setting these to nil if frequency isn't .twiceADay.
+            // So comparing to ModelDefaults.didAdministerPrednisoneDose2 (which is nil) is correct here if it has been properly nilled out.
+            (log.prednisoneFrequency != .twiceADay ? log.didAdministerPrednisoneDose2 == nil : log.didAdministerPrednisoneDose2 == ModelDefaults.didAdministerPrednisoneDose2) &&
+            log.asthmaMedDosagePuffs == ModelDefaults.asthmaMedDosagePuffs &&
+            log.asthmaMedFrequency == ModelDefaults.asthmaMedFrequency &&
+            log.didAdministerAsthmaMedDose1 == ModelDefaults.didAdministerAsthmaMedDose1 &&
+            (log.asthmaMedFrequency != .twiceADay ? log.didAdministerAsthmaMedDose2 == nil : log.didAdministerAsthmaMedDose2 == ModelDefaults.didAdministerAsthmaMedDose2)
         
-        // If everything is at defaults, delete the log
         if isAtDefaults {
             modelContext.delete(log)
             editingLog = nil
-            // Create a new temporary log so the UI doesn't disappear
-            temporaryLog = DailyLog(date: selectedDate)
+            temporaryLog = DailyLog(date: selectedDate) // Re-create temporary log using new defaults
+            print("Log for \(selectedDate) deleted as all values were at default.")
         }
     }
 }

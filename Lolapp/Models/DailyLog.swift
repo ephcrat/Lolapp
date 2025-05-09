@@ -61,19 +61,19 @@ final class DailyLog {
     // Initializer (constructor) to create a new DailyLog instance.
     // It takes a 'date' and provides default values for all other properties
     init(date: Date,
-         coughCount: Int = 0,
-         notes: String? = nil,
-         softFoodGivenGrams: Int = 0,
-         softFoodTargetGrams: Int = 300,
-         isPrednisoneScheduled: Bool = false,
-         prednisoneDosageDrops: Int? = nil,
-         prednisoneFrequency: Frequency? = nil,
-         didAdministerPrednisoneDose1: Bool = false,
-         didAdministerPrednisoneDose2: Bool? = false,
-         asthmaMedDosagePuffs: Int? = 3,
-         asthmaMedFrequency: Frequency? = .onceADay,
-         didAdministerAsthmaMedDose1: Bool = false,
-         didAdministerAsthmaMedDose2: Bool? = false,
+         coughCount: Int = ModelDefaults.coughCount,
+         notes: String? = ModelDefaults.notes,
+         softFoodGivenGrams: Int = ModelDefaults.softFoodGivenGrams,
+         softFoodTargetGrams: Int = ModelDefaults.softFoodTargetGrams,
+         isPrednisoneScheduled: Bool = ModelDefaults.isPrednisoneScheduled,
+         prednisoneDosageDrops: Int? = ModelDefaults.prednisoneDosageDrops,
+         prednisoneFrequency: Frequency? = ModelDefaults.prednisoneFrequency,
+         didAdministerPrednisoneDose1: Bool = ModelDefaults.didAdministerPrednisoneDose1,
+         didAdministerPrednisoneDose2: Bool? = ModelDefaults.didAdministerPrednisoneDose2,
+         asthmaMedDosagePuffs: Int? = ModelDefaults.asthmaMedDosagePuffs,
+         asthmaMedFrequency: Frequency? = ModelDefaults.asthmaMedFrequency,
+         didAdministerAsthmaMedDose1: Bool = ModelDefaults.didAdministerAsthmaMedDose1,
+         didAdministerAsthmaMedDose2: Bool? = ModelDefaults.didAdministerAsthmaMedDose2,
          lastModified: Date = Date()
     ) {
         // Normalize the date to midnight (start of the day) for consistency.
