@@ -58,14 +58,19 @@ struct DayDetailView: View {
                             }
                         
                         PrednisoneSectionView(log: bindableLog, numberFormatter: numberFormatter)
-                            .onChange(of: bindableLog.isPrednisoneScheduled) { _, _ in
+                            .onChange(of: bindableLog.isPrednisoneScheduled) { _, isScheduled in
                                 ensureLogExists(log)
+                                if !isScheduled {
+                                    checkIfLogShouldBeDeleted(log)
+                                }
                             }
                             .onChange(of: bindableLog.prednisoneDosageDrops) { _, _ in
                                 ensureLogExists(log)
+                                checkIfLogShouldBeDeleted(log) // Check if dosage change reverts to default
                             }
                             .onChange(of: bindableLog.prednisoneFrequency) { _, _ in
                                 ensureLogExists(log)
+                                checkIfLogShouldBeDeleted(log) // Check if frequency change reverts to default
                             }
                             .onChange(of: bindableLog.didAdministerPrednisoneDose1) { _, _ in
                                 ensureLogExists(log)
@@ -77,14 +82,19 @@ struct DayDetailView: View {
                             }
                         
                         AsthmaMedSectionView(log: bindableLog, numberFormatter: numberFormatter)
-                            .onChange(of: bindableLog.isAsthmaMedScheduled) { _, _ in
+                            .onChange(of: bindableLog.isAsthmaMedScheduled) { _, isScheduled in
                                 ensureLogExists(log)
+                                if !isScheduled {
+                                    checkIfLogShouldBeDeleted(log)
+                                }
                             }
                             .onChange(of: bindableLog.asthmaMedDosagePuffs) { _, _ in
                                 ensureLogExists(log)
+                                checkIfLogShouldBeDeleted(log)
                             }
                             .onChange(of: bindableLog.asthmaMedFrequency) { _, _ in
                                 ensureLogExists(log)
+                                checkIfLogShouldBeDeleted(log)
                             }
                             .onChange(of: bindableLog.didAdministerAsthmaMedDose1) { _, _ in
                                 ensureLogExists(log)
