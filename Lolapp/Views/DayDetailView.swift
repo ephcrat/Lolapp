@@ -11,32 +11,27 @@ let numberFormatter: NumberFormatter = {
 }()
 
 struct DayDetailView: View {
-    // Environment access for saving changes
     @Environment(\.modelContext) private var modelContext: ModelContext
-    // State variable to hold the log being edited. Initialized in onAppear.
     @State private var editingLog: DailyLog? = nil
-
-    // The specific date this view is for.
+    
+    // New state for when we're editing but don't have a persistent log yet
+    @State private var temporaryLog: DailyLog? = nil
+    
+    // Computed property to get the log we're currently working with
+    private var activeLog: DailyLog? {
+        return editingLog ?? temporaryLog
+    }
+    
     let selectedDate: Date
-
-    // Query to find the specific DailyLog for the selectedDate.
-    // Note: The query updates automatically if the log changes elsewhere.
     @Query private var dailyLogs: [DailyLog]
 
-    // Initializer to filter the query based on the selected date.
     init(selectedDate: Date) {
         self.selectedDate = selectedDate
-        // Normalize the date to the start of the day for accurate fetching
         let calendar: Calendar = Calendar.current
         let startOfDay: Date = calendar.startOfDay(for: selectedDate)
-        
-        // Create the predicate to filter logs for the specific day
         let predicate: Predicate<DailyLog> = #Predicate<DailyLog> { log in
             log.date == startOfDay
         }
-        
-        // Initialize the @Query with the specific predicate
-        // We sort by date too, though there should only be one result.
         _dailyLogs = Query(filter: predicate, sort: \DailyLog.date)
     }
 
@@ -48,60 +43,160 @@ struct DayDetailView: View {
                 .bold()
                 .padding(.bottom)
 
-            // Check if the editingLog has been loaded
-            if let log: DailyLog = editingLog {
-                // Use @Bindable to allow direct modification of the log's properties
+            // Check if we have an active log to display
+            if let log: DailyLog = activeLog {
                 @Bindable var bindableLog: DailyLog = log
                 
-                // Wrap sections in a ScrollView in case content gets long
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         CoughTrackingSectionView(log: bindableLog)
+                            .onChange(of: bindableLog.coughCount) { _, newValue in
+                                ensureLogExists(log)
+                                 // If the value is now default (0) and all other values are default, 
+                                // consider deleting the log
+                                checkIfLogShouldBeDeleted(log)
+                            }
                         
                         PrednisoneSectionView(log: bindableLog, numberFormatter: numberFormatter)
+                            .onChange(of: bindableLog.isPrednisoneScheduled) { _, _ in
+                                ensureLogExists(log)
+                            }
+                            .onChange(of: bindableLog.prednisoneDosageDrops) { _, _ in
+                                ensureLogExists(log)
+                            }
+                            .onChange(of: bindableLog.prednisoneFrequency) { _, _ in
+                                ensureLogExists(log)
+                            }
+                            .onChange(of: bindableLog.didAdministerPrednisoneDose1) { _, _ in
+                                ensureLogExists(log)
+                                checkIfLogShouldBeDeleted(log)
+                            }
+                            .onChange(of: bindableLog.didAdministerPrednisoneDose2) { _, _ in
+                                ensureLogExists(log)
+                                checkIfLogShouldBeDeleted(log)
+                            }
                         
                         AsthmaMedSectionView(log: bindableLog, numberFormatter: numberFormatter)
-
-                        SoftFoodSectionView(log: bindableLog)
-
-                        NotesSectionView(log: bindableLog)
-
+                            .onChange(of: bindableLog.isAsthmaMedScheduled) { _, _ in
+                                ensureLogExists(log)
+                            }
+                            .onChange(of: bindableLog.asthmaMedDosagePuffs) { _, _ in
+                                ensureLogExists(log)
+                            }
+                            .onChange(of: bindableLog.asthmaMedFrequency) { _, _ in
+                                ensureLogExists(log)
+                            }
+                            .onChange(of: bindableLog.didAdministerAsthmaMedDose1) { _, _ in
+                                ensureLogExists(log)
+                                checkIfLogShouldBeDeleted(log)
+                            }
+                            .onChange(of: bindableLog.didAdministerAsthmaMedDose2) { _, _ in
+                                ensureLogExists(log)
+                                checkIfLogShouldBeDeleted(log)
+                            }
                         
-                        Spacer() // Push content to top within ScrollView
+                        SoftFoodSectionView(log: bindableLog)
+                            .onChange(of: bindableLog.softFoodGivenGrams) { _, newValue in
+                                ensureLogExists(log)
+                                if newValue == 0 {
+                                    checkIfLogShouldBeDeleted(log)
+                                }
+                            }
+                            .onChange(of: bindableLog.softFoodTargetGrams) { _, _ in
+                                ensureLogExists(log)
+                            }
+                        
+                        NotesSectionView(log: bindableLog)
+                            .onChange(of: bindableLog.notes) { _, newValue in
+                                ensureLogExists(log)
+                                if newValue == nil || newValue?.isEmpty == true {
+                                    checkIfLogShouldBeDeleted(log)
+                                }
+                            }
+                        
+                        Spacer()
                     }
                 }
             } else {
-                // Show a loading state or placeholder while log is prepared
-                ProgressView()
-                Spacer()
+                // If no log exists yet, show a message and create a temporary log
+                VStack(spacing: 20) {
+                    Text("No data for this day yet.")
+                        .font(.headline)
+                    
+                    Text("Make changes to create a log.")
+                        .foregroundColor(.secondary)
+                    
+                    Button("Start Tracking") {
+                        // Create a temporary log for editing
+                        temporaryLog = DailyLog(date: selectedDate)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .padding()
+                    
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
             }
         }
-        .padding() // Add padding around the VStack content
-        .navigationTitle("Daily Log") // Set title for the navigation bar
+        .padding()
+        .navigationTitle("Daily Log")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear(perform: loadOrCreateLog) // Load or create the log when view appears
+        .onAppear(perform: loadExistingLog)
     }
 
-    /// Loads the existing log for the selectedDate or creates and inserts a new one.
-    private func loadOrCreateLog() {
-        // Check if we already loaded it (e.g., view reappeared)
-        guard editingLog == nil else { return }
+    /// Loads an existing log if one exists, but doesn't create a new one
+    private func loadExistingLog() {
+        // Set editingLog to the first matching log, or nil if none exists
+        editingLog = dailyLogs.first
         
-        if let existingLog: DailyLog = dailyLogs.first {
-            // If a log for this date exists, use it for editing.
-            editingLog = existingLog
-            print("Loaded existing log for \(selectedDate)")
-        } else {
-            // If no log exists, create a new one for the selected date.
-            let newLog: DailyLog = DailyLog(date: selectedDate)
-            // IMPORTANT: Insert the new log into the context immediately.
-            // This makes it managed by SwiftData so changes will be saved.
-            modelContext.insert(newLog)
-             // Assign the newly created log to our state variable for editing.
-            editingLog = newLog
-            print("Created and inserted new log for \(selectedDate)")
-             // Note: SwiftData might automatically save, but explicit save can be added if needed.
-             // try? modelContext.save()
+        // If no existing log was found, create a temporary one for display
+        if editingLog == nil && temporaryLog == nil {
+            temporaryLog = DailyLog(date: selectedDate)
+        }
+    }
+    
+    /// Ensures the log exists in the database if it's just a temporary log
+    private func ensureLogExists(_ log: DailyLog) {
+        // If we're working with a temporary log and it's not yet in the database
+        if editingLog == nil && log == temporaryLog {
+            // Insert the temporary log into the context to make it persistent
+            modelContext.insert(log)
+            // Update our state to reference the now-persistent log
+            editingLog = log
+            // Clear the temporary log reference
+            temporaryLog = nil
+        }
+    }
+    
+    /// Checks if the log should be deleted because all values are at defaults
+    private func checkIfLogShouldBeDeleted(_ log: DailyLog) {
+        // Only proceed if this is a real log that's being tracked
+        guard log == editingLog else { return }
+        
+        // Check if all values are at their defaults
+        let isAtDefaults = 
+            log.coughCount == 0 &&
+            log.notes == nil &&
+            log.softFoodGivenGrams == 0 &&
+            log.softFoodTargetGrams == 300 &&
+            !log.isPrednisoneScheduled &&
+            log.prednisoneDosageDrops == nil &&
+            log.prednisoneFrequency == nil &&
+            !log.didAdministerPrednisoneDose1 &&
+            log.didAdministerPrednisoneDose2 == nil &&
+            !log.isAsthmaMedScheduled &&
+            log.asthmaMedDosagePuffs == nil &&
+            log.asthmaMedFrequency == nil &&
+            !log.didAdministerAsthmaMedDose1 &&
+            log.didAdministerAsthmaMedDose2 == nil
+        
+        // If everything is at defaults, delete the log
+        if isAtDefaults {
+            modelContext.delete(log)
+            editingLog = nil
+            // Create a new temporary log so the UI doesn't disappear
+            temporaryLog = DailyLog(date: selectedDate)
         }
     }
 }

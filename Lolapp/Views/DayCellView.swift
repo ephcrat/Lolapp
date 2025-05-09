@@ -4,9 +4,14 @@ import SwiftData
 struct DayCellView: View {
     let date: Date
     let dailyLog: DailyLog? // The log for this specific date, if it exists
+  
 
     private let calendar: Calendar = Calendar.current
-    private var isToday: Bool { calendar.isDateInToday(date) }
+    private var isToday: Bool {
+        let today: Date = calendar.startOfDay(for: Date())
+        let cellDate: Date = calendar.startOfDay(for: date)
+        return calendar.isDate(cellDate, inSameDayAs: today)
+    }
 
     var body: some View {
         VStack {
