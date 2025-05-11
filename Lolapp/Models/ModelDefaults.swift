@@ -6,7 +6,6 @@ import Foundation
 struct ModelDefaults {
     static let coughCount: Int = 0
     static let notes: String? = nil
-    static let softFoodGivenGrams: Int = 0
     static let softFoodTargetGrams: Int = 300
     
     // Prednisone Defaults

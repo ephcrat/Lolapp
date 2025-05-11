@@ -37,8 +37,18 @@ final class DailyLog {
     // Tracking variables - initialized with default values in the init.
     var coughCount: Int
     var notes: String? // String? means it's an optional String, can be nil.
-    var softFoodGivenGrams: Int
     var softFoodTargetGrams: Int
+
+    // Relationship to FoodEntry. Default to an empty array.
+    // SwiftData handles the inverse relationship from FoodEntry.dailyLog
+    // The .cascade delete rule means if a DailyLog is deleted, all its associated FoodEntry records are also deleted.
+    @Relationship(deleteRule: .cascade, inverse: \FoodEntry.dailyLog)
+    var foodEntries: [FoodEntry] = []
+
+    // Computed property for total grams of soft food given
+    var softFoodGivenGrams: Int {
+        foodEntries.reduce(0) { $0 + $1.grams }
+    }
 
     // Prednisone specific tracking
     var isPrednisoneScheduled: Bool
@@ -63,7 +73,7 @@ final class DailyLog {
     init(date: Date,
          coughCount: Int = ModelDefaults.coughCount,
          notes: String? = ModelDefaults.notes,
-         softFoodGivenGrams: Int = ModelDefaults.softFoodGivenGrams,
+         foodEntries: [FoodEntry] = [],
          softFoodTargetGrams: Int = ModelDefaults.softFoodTargetGrams,
          isPrednisoneScheduled: Bool = ModelDefaults.isPrednisoneScheduled,
          prednisoneDosageDrops: Int? = ModelDefaults.prednisoneDosageDrops,
@@ -82,7 +92,7 @@ final class DailyLog {
         self.date = Calendar.current.startOfDay(for: date)
         self.coughCount = coughCount
         self.notes = notes
-        self.softFoodGivenGrams = softFoodGivenGrams
+        self.foodEntries = foodEntries
         self.softFoodTargetGrams = softFoodTargetGrams
         self.isPrednisoneScheduled = isPrednisoneScheduled
         self.prednisoneDosageDrops = prednisoneDosageDrops
@@ -108,6 +118,6 @@ final class DailyLog {
      // It calls the main `init` method, passing in the current date.
      // This is useful for quickly creating a log entry for the present day.
      convenience init() {
-         self.init(date: Date()) // Still uses defaults, including target=300
+         self.init(date: Date())
      }
 }

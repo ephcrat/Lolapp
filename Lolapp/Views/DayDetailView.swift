@@ -16,6 +16,7 @@ struct DayDetailView: View {
     
     // New state for when we're editing but don't have a persistent log yet
     @State private var temporaryLog: DailyLog? = nil
+    @State private var showingSoftFoodLogSheet: Bool = false
     
     // Computed property to get the log we're currently working with
     private var activeLog: DailyLog? {
@@ -99,16 +100,46 @@ struct DayDetailView: View {
                                 checkIfLogShouldBeDeleted(log)
                             }
                         
-                        SoftFoodSectionView(log: bindableLog)
-                            .onChange(of: bindableLog.softFoodGivenGrams) { _, newValue in
-                                ensureLogExists(log)
-                                if newValue == 0 {
-                                    checkIfLogShouldBeDeleted(log)
+                        Section() {
+                            Button(action: {
+                                ensureLogExists(activeLog ?? DailyLog(date: selectedDate)) // Ensure log exists before showing sheet
+                                if activeLog != nil { // Only show if log is available
+                                   showingSoftFoodLogSheet = true
                                 }
+                            }) {
+                                HStack {
+                                    Label {
+                                        Text("Soft Food Intake")
+                                    } icon: {
+                                        Image(systemName: "fork.knife")
+                                    }
+                                    Spacer()
+                                    if let currentLog = activeLog {
+                                        Text("\(currentLog.softFoodGivenGrams)g / \(currentLog.softFoodTargetGrams)g")
+                                            .font(.callout)
+                                            .foregroundColor(.secondary)
+                                    } else {
+                                        Text("Not Tracked")
+                                            .font(.callout)
+                                            .foregroundColor(.gray)
+                                    }
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundColor(Color(.systemGray3))
+                                }
+                                .contentShape(Rectangle())
                             }
-                            .onChange(of: bindableLog.softFoodTargetGrams) { _, _ in
-                                ensureLogExists(log)
-                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        .onChange(of: bindableLog.foodEntries) { _, _ in
+                            ensureLogExists(log)
+                            checkIfLogShouldBeDeleted(log)
+                        }
+                        .onChange(of: bindableLog.softFoodTargetGrams) { _, _ in
+                            ensureLogExists(log)
+                            checkIfLogShouldBeDeleted(log)
+                        }
                         
                         NotesSectionView(log: bindableLog)
                             .onChange(of: bindableLog.notes) { _, newValue in
@@ -147,6 +178,16 @@ struct DayDetailView: View {
         .navigationTitle("Daily Log")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: loadExistingLog)
+        .sheet(isPresented: $showingSoftFoodLogSheet) {
+            if let currentActiveLog = activeLog {
+                SoftFoodLogSheetView(log: currentActiveLog)
+            } else {
+                // Fallback or error handling if activeLog is nil when sheet is supposed to show
+                // This should ideally not happen if the button to show is disabled or handles nil log
+                // For now, a simple text view or empty view.
+                Text("Error: No active log available for the sheet.")
+            }
+        }
     }
 
     /// Loads an existing log if one exists, but doesn't create a new one
@@ -181,7 +222,7 @@ struct DayDetailView: View {
         let isAtDefaults = 
             log.coughCount == ModelDefaults.coughCount &&
             log.notes == ModelDefaults.notes && // Handles nil comparison correctly
-            log.softFoodGivenGrams == ModelDefaults.softFoodGivenGrams &&
+            log.foodEntries.isEmpty &&
             log.softFoodTargetGrams == ModelDefaults.softFoodTargetGrams &&
             log.isPrednisoneScheduled == ModelDefaults.isPrednisoneScheduled &&
             log.prednisoneDosageDrops == ModelDefaults.prednisoneDosageDrops &&
