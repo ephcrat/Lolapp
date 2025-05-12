@@ -10,6 +10,11 @@ let numberFormatter: NumberFormatter = {
     return formatter
 }()
 
+// Enum to identify expandable sections
+enum MedicationSectionIdentifier {
+    case prednisone, asthma, none
+}
+
 struct DayDetailView: View {
     @Environment(\.modelContext) private var modelContext: ModelContext
     @State private var editingLog: DailyLog? = nil
@@ -17,6 +22,7 @@ struct DayDetailView: View {
     // New state for when we're editing but don't have a persistent log yet
     @State private var temporaryLog: DailyLog? = nil
     @State private var showingSoftFoodLogSheet: Bool = false
+    @State private var expandedSection: MedicationSectionIdentifier = .none // Tracks expanded section
     
     // Computed property to get the log we're currently working with
     private var activeLog: DailyLog? {
@@ -37,144 +43,111 @@ struct DayDetailView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        // Use List for the settings-like appearance
+        List {
             // Section 1: Display Selected Date
-            Text(selectedDate, style: .date)
-                .font(.largeTitle)
-                .bold()
-                .padding(.bottom)
+            Section {
+                Text(selectedDate, style: .date)
+                    .font(.largeTitle)
+                    .bold()
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .listRowBackground(Color.clear)
 
             // Check if we have an active log to display
             if let log: DailyLog = activeLog {
                 @Bindable var bindableLog: DailyLog = log
                 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        CoughTrackingSectionView(log: bindableLog)
-                            .onChange(of: bindableLog.coughCount) { _, newValue in
-                                ensureLogExists(log)
-                                 // If the value is now default (0) and all other values are default, 
-                                // consider deleting the log
-                                checkIfLogShouldBeDeleted(log)
-                            }
-                        
-                        PrednisoneSectionView(log: bindableLog, numberFormatter: numberFormatter)
-                            .onChange(of: bindableLog.isPrednisoneScheduled) { _, isScheduled in
-                                ensureLogExists(log)
-                                if !isScheduled {
-                                    checkIfLogShouldBeDeleted(log)
-                                }
-                            }
-                            .onChange(of: bindableLog.prednisoneDosageDrops) { _, _ in
-                                ensureLogExists(log)
-                                checkIfLogShouldBeDeleted(log) // Check if dosage change reverts to default
-                            }
-                            .onChange(of: bindableLog.prednisoneFrequency) { _, _ in
-                                ensureLogExists(log)
-                                checkIfLogShouldBeDeleted(log) // Check if frequency change reverts to default
-                            }
-                            .onChange(of: bindableLog.didAdministerPrednisoneDose1) { _, _ in
-                                ensureLogExists(log)
-                                checkIfLogShouldBeDeleted(log)
-                            }
-                            .onChange(of: bindableLog.didAdministerPrednisoneDose2) { _, _ in
-                                ensureLogExists(log)
-                                checkIfLogShouldBeDeleted(log)
-                            }
-                        
-                        AsthmaMedSectionView(log: bindableLog, numberFormatter: numberFormatter)
-                            .onChange(of: bindableLog.asthmaMedDosagePuffs) { _, newValue in
-                                ensureLogExists(log)
-                                checkIfLogShouldBeDeleted(log)
-                            }
-                            .onChange(of: bindableLog.asthmaMedFrequency) { _, newValue in
-                                ensureLogExists(log)
-                                checkIfLogShouldBeDeleted(log)
-                            }
-                            .onChange(of: bindableLog.didAdministerAsthmaMedDose1) { _, newValue in
-                                ensureLogExists(log)
-                                checkIfLogShouldBeDeleted(log)
-                            }
-                            .onChange(of: bindableLog.didAdministerAsthmaMedDose2) { _, newValue in
-                                ensureLogExists(log)
-                                checkIfLogShouldBeDeleted(log)
-                            }
-                        
-                        Section() {
-                            Button(action: {
-                                ensureLogExists(activeLog ?? DailyLog(date: selectedDate)) // Ensure log exists before showing sheet
-                                if activeLog != nil { // Only show if log is available
-                                   showingSoftFoodLogSheet = true
-                                }
-                            }) {
-                                HStack {
-                                    Label {
-                                        Text("Soft Food Intake")
-                                    } icon: {
-                                        Image(systemName: "fork.knife")
-                                    }
-                                    Spacer()
-                                    if let currentLog = activeLog {
-                                        Text("\(currentLog.softFoodGivenGrams)g / \(currentLog.softFoodTargetGrams)g")
-                                            .font(.callout)
-                                            .foregroundColor(.secondary)
-                                    } else {
-                                        Text("Not Tracked")
-                                            .font(.callout)
-                                            .foregroundColor(.gray)
-                                    }
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption.weight(.bold))
-                                        .foregroundColor(Color(.systemGray3))
-                                }
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
+                // Cough Tracking - now a direct list item
+                CoughTrackingSectionView(log: bindableLog)
+                    .onChange(of: bindableLog.coughCount) { _, _ in handleLogChange(log) }
 
-                        .onChange(of: bindableLog.foodEntries) { _, _ in
-                            ensureLogExists(log)
-                            checkIfLogShouldBeDeleted(log)
+                // Prednisone Section with binding for accordion
+                let prednisoneBinding = Binding<Bool>(
+                    get: { self.expandedSection == .prednisone },
+                    set: { newValue in self.expandedSection = newValue ? .prednisone : .none }
+                )
+                PrednisoneSectionView(log: bindableLog, numberFormatter: numberFormatter, isExpanded: prednisoneBinding)
+                    .onChange(of: bindableLog.isPrednisoneScheduled) { _, _ in handleLogChange(log) }
+                    .onChange(of: bindableLog.prednisoneDosageDrops) { _, _ in handleLogChange(log) }
+                    .onChange(of: bindableLog.prednisoneFrequency) { _, _ in handleLogChange(log) }
+                    .onChange(of: bindableLog.didAdministerPrednisoneDose1) { _, _ in handleLogChange(log) }
+                    .onChange(of: bindableLog.didAdministerPrednisoneDose2) { _, _ in handleLogChange(log) }
+
+                // AsthmaMed Section with binding for accordion
+                let asthmaBinding = Binding<Bool>(
+                    get: { self.expandedSection == .asthma },
+                    set: { newValue in self.expandedSection = newValue ? .asthma : .none }
+                )
+                AsthmaMedSectionView(log: bindableLog, numberFormatter: numberFormatter, isExpanded: asthmaBinding)
+                    .onChange(of: bindableLog.asthmaMedDosagePuffs) { _, _ in handleLogChange(log) }
+                    .onChange(of: bindableLog.asthmaMedFrequency) { _, _ in handleLogChange(log) }
+                    .onChange(of: bindableLog.didAdministerAsthmaMedDose1) { _, _ in handleLogChange(log) }
+                    .onChange(of: bindableLog.didAdministerAsthmaMedDose2) { _, _ in handleLogChange(log) }
+                
+                // Soft Food Intake - styled as a navigation link row
+                Section(header: Text("Nutrition").font(.headline)) {
+                    Button(action: {
+                        ensureLogExists(activeLog ?? DailyLog(date: selectedDate))
+                        if activeLog != nil {
+                           showingSoftFoodLogSheet = true
                         }
-                        .onChange(of: bindableLog.softFoodTargetGrams) { _, _ in
-                            ensureLogExists(log)
-                            checkIfLogShouldBeDeleted(log)
+                    }) {
+                        HStack {
+                             Label(title: {
+                                Text("Soft Food Intake")
+                            }, icon: {
+                                Image(systemName: "fork.knife")
+                                    .foregroundColor(.accentColor)
+                            })
+                            Spacer()
+                            Text("\(log.softFoodGivenGrams)g / \(log.softFoodTargetGrams)g")
+                                .font(.callout)
+                                .foregroundColor(.secondary)
+                            Image(systemName: "chevron.right") // Mimic navigation link
+                                .font(.caption.weight(.bold))
+                                .foregroundColor(Color(.systemGray4))
                         }
-                        
-                        NotesSectionView(log: bindableLog)
-                            .onChange(of: bindableLog.notes) { _, newValue in
-                                ensureLogExists(log)
-                                if newValue == nil || newValue?.isEmpty == true {
-                                    checkIfLogShouldBeDeleted(log)
-                                }
-                            }
-                        
-                        Spacer()
+                        .foregroundColor(.primary) // Ensure text is standard color
                     }
+                    .onChange(of: bindableLog.foodEntries) { _, _ in handleLogChange(log) }
+                    .onChange(of: bindableLog.softFoodTargetGrams) { _, _ in handleLogChange(log) }
                 }
+
+                // Notes Section - TextEditor directly in a list section
+                Section(header: Text("Observations").font(.headline)) {
+                    NotesSectionView(log: bindableLog)
+                        .onChange(of: bindableLog.notes) { _, newValue in
+                            ensureLogExists(log)
+                            if newValue == nil || newValue?.isEmpty == true {
+                                checkIfLogShouldBeDeleted(log)
+                            }
+                        }
+                }
+                
             } else {
                 // If no log exists yet, show a message and create a temporary log
-                VStack(spacing: 20) {
-                    Text("No data for this day yet.")
-                        .font(.headline)
-                    
-                    Text("Make changes to create a log.")
-                        .foregroundColor(.secondary)
-                    
-                    Button("Start Tracking") {
-                        // Create a temporary log for editing
-                        temporaryLog = DailyLog(date: selectedDate)
+                Section {
+                    VStack(spacing: 15) {
+                        Text("No data for this day yet.")
+                            .font(.headline)
+                        Text("Tap below to start tracking or make changes in the sections above.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        Button("Start Tracking") {
+                            temporaryLog = DailyLog(date: selectedDate)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .padding(.top)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .padding()
-                    
-                    Spacer()
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical)
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
             }
         }
-        .padding()
+        .listStyle(.insetGrouped) // Apply the settings-like list style
         .navigationTitle("Daily Log")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: loadExistingLog)
@@ -182,12 +155,15 @@ struct DayDetailView: View {
             if let currentActiveLog = activeLog {
                 SoftFoodLogSheetView(log: currentActiveLog)
             } else {
-                // Fallback or error handling if activeLog is nil when sheet is supposed to show
-                // This should ideally not happen if the button to show is disabled or handles nil log
-                // For now, a simple text view or empty view.
                 Text("Error: No active log available for the sheet.")
             }
         }
+    }
+
+    /// Combined handler for ensuring log exists and checking for deletion
+    private func handleLogChange(_ log: DailyLog) {
+        ensureLogExists(log)
+        checkIfLogShouldBeDeleted(log)
     }
 
     /// Loads an existing log if one exists, but doesn't create a new one
@@ -221,16 +197,13 @@ struct DayDetailView: View {
         // Compare current log values against the global defaults
         let isAtDefaults = 
             log.coughCount == ModelDefaults.coughCount &&
-            log.notes == ModelDefaults.notes && // Handles nil comparison correctly
+            (log.notes ?? "").isEmpty &&
             log.foodEntries.isEmpty &&
             log.softFoodTargetGrams == ModelDefaults.softFoodTargetGrams &&
             log.isPrednisoneScheduled == ModelDefaults.isPrednisoneScheduled &&
             log.prednisoneDosageDrops == ModelDefaults.prednisoneDosageDrops &&
             log.prednisoneFrequency == ModelDefaults.prednisoneFrequency &&
             log.didAdministerPrednisoneDose1 == ModelDefaults.didAdministerPrednisoneDose1 &&
-            // For optional Bools that depend on frequency, their default is effectively nil if not .twiceADay
-            // The logic in DailyLog init and section views already handles setting these to nil if frequency isn't .twiceADay.
-            // So comparing to ModelDefaults.didAdministerPrednisoneDose2 (which is nil) is correct here if it has been properly nilled out.
             (log.prednisoneFrequency != .twiceADay ? log.didAdministerPrednisoneDose2 == nil : log.didAdministerPrednisoneDose2 == ModelDefaults.didAdministerPrednisoneDose2) &&
             log.asthmaMedDosagePuffs == ModelDefaults.asthmaMedDosagePuffs &&
             log.asthmaMedFrequency == ModelDefaults.asthmaMedFrequency &&

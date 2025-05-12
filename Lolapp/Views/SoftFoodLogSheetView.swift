@@ -8,6 +8,13 @@ struct SoftFoodLogSheetView: View {
     @Bindable var log: DailyLog
     @State private var gramsToAddText: String = ""
 
+
+    // Enum to identify focusable fields
+    private enum Field: Hashable {
+        case targetGrams
+        case gramsToAdd
+    }
+
     private var foodRemainingGrams: Int {
         log.softFoodTargetGrams - log.softFoodGivenGrams
     }
@@ -29,8 +36,8 @@ struct SoftFoodLogSheetView: View {
 
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading, spacing: 10) {
-                // Target, Given, Remaining Section (using Form for grouping)
+            // Wrap Form in a VStack to apply tap gesture to the whole area
+            VStack {
                 Form {
                     Section(header: Text("Summary")) {
                         HStack {
@@ -96,6 +103,13 @@ struct SoftFoodLogSheetView: View {
                         dismissSheet()
                     }
                 }
+                // Keyboard toolbar for the "Done" button
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer() // Pushes the button to the right
+                    Button("Done") {
+                        dismissKeyboard()
+                    }
+                }
             }
         }
     }
@@ -114,6 +128,7 @@ struct SoftFoodLogSheetView: View {
         log.foodEntries.append(newFoodEntry)
         log.lastModified = Date()
         gramsToAddText = ""
+        dismissKeyboard()
     }
 
     private func deleteFoodEntry(at offsets: IndexSet) {
@@ -126,6 +141,10 @@ struct SoftFoodLogSheetView: View {
             }
         }
         log.lastModified = Date()
+    }
+
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 

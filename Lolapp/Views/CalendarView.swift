@@ -96,7 +96,7 @@ struct CalendarView: View {
 
                 Spacer() // Pushes everything to the top
             }
-            .navigationTitle("Calendar") // Title for the view
+            .navigationTitle("Home") // Title for the view
             // .navigationBarTitleDisplayMode(.inline) // Removed for potential macOS compatibility
             // Add a toolbar for the quick action button
             .toolbar {

@@ -18,13 +18,9 @@ struct NotesSectionView: View {
     }
     
     var body: some View {
-        DisclosureGroup("Notes") {
-            // TextEditor needs a non-optional String binding
             TextEditor(text: notesBinding)
-                .frame(height: 150) // Set a reasonable default height
-                .border(Color.secondary.opacity(0.2), width: 1) // Subtle border
-                .padding(.top, 5) // Add space above editor
-        }
+                .frame(minHeight: 100, maxHeight: 200)
+                .scrollContentBackground(.hidden)
     }
 }
 
@@ -35,9 +31,14 @@ struct NotesSectionView: View {
         @State private var sampleLogNoNotes = DailyLog(date: Date())
         
         var body: some View {
-            List {
-                NotesSectionView(log: sampleLogWithNotes)
-                NotesSectionView(log: sampleLogNoNotes)
+            // Using Form to mimic settings-like appearance for preview
+            Form {
+                Section("Notes") { // Add a section header for context in preview
+                    NotesSectionView(log: sampleLogWithNotes)
+                }
+                Section("Notes (Empty)") {
+                    NotesSectionView(log: sampleLogNoNotes)
+                }
             }
         }
     }

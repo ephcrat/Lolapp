@@ -5,14 +5,32 @@ struct CoughTrackingSectionView: View {
     @Bindable var log: DailyLog
     
     var body: some View {
-        Section("Cough Tracking") {
-            HStack {
-                Text("Coughs Today:")
-                Spacer()
-                // Stepper allows easy +/- increments
-                // Directly binds to the coughCount property of our log
-                Stepper("\(log.coughCount)", value: $log.coughCount, in: 0...100) // Range 0-100
+        HStack {
+            Label("Coughs", systemImage: "facemask.fill")
+            Spacer()
+            Button {
+                if log.coughCount > 0 {
+                    log.coughCount -= 1
+                }
+            } label: {
+                Image(systemName: "minus.circle.fill")
+                    .foregroundColor(.gray)
             }
+            .buttonStyle(.plain)
+
+            Text("\(log.coughCount)")
+                .font(.headline)
+                .frame(minWidth: 30, alignment: .center)
+
+            Button {
+                if log.coughCount < 100 {
+                    log.coughCount += 1
+                }
+            } label: {
+                Image(systemName: "plus.circle.fill")
+                    .foregroundColor(.accentColor)
+            }
+            .buttonStyle(.plain)
         }
     }
 }
@@ -23,7 +41,7 @@ struct CoughTrackingSectionView: View {
         @State private var sampleLog: DailyLog = DailyLog(date: Date(), coughCount: 3)
         
         var body: some View {
-            List { // Using List for preview to see Section styling
+            List {
                  CoughTrackingSectionView(log: sampleLog)
             }
         }

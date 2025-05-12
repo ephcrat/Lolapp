@@ -26,6 +26,8 @@ struct LolappApp: App {
     var body: some Scene {
         WindowGroup {
             CalendarView()
+                .preferredColorScheme(.light)
+                .accentColor(.purple)
         }
         .modelContainer(sharedModelContainer)
     }
