@@ -4,6 +4,7 @@ import SwiftData
 struct NotesSectionView: View {
     @Bindable var log: DailyLog
     
+    @FocusState private var isTextEditorFocused: Bool
     // Custom binding to handle the optional String for TextEditor
     private var notesBinding: Binding<String> {
         Binding<String>(
@@ -18,17 +19,26 @@ struct NotesSectionView: View {
     }
     
     var body: some View {
-            TextEditor(text: notesBinding)
-                .frame(minHeight: 100, maxHeight: 200)
-                .scrollContentBackground(.hidden)
+        TextEditor(text: notesBinding)
+            .frame(minHeight: 100, maxHeight: 200)
+            .scrollContentBackground(.hidden)
+            .focused($isTextEditorFocused)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        isTextEditorFocused = false
+                    }
+                }
+            }
     }
 }
 
 // --- Preview --- 
 #Preview {
     struct PreviewWrapper: View {
-        @State private var sampleLogWithNotes = DailyLog(date: Date(), notes: "Ate well today. Seemed calm.")
-        @State private var sampleLogNoNotes = DailyLog(date: Date())
+        @State private var sampleLogWithNotes: DailyLog = DailyLog(date: Date(), notes: "Ate well today. Seemed calm.")
+        @State private var sampleLogNoNotes: DailyLog = DailyLog(date: Date())
         
         var body: some View {
             // Using Form to mimic settings-like appearance for preview

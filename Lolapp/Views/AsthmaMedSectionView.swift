@@ -23,10 +23,11 @@ struct AsthmaMedSectionView: View {
 // --- Private Helper View for Asthma Med Details ---
 private struct AsthmaMedDetailsView: View {
     @Bindable var log: DailyLog
+    @FocusState private var isPuffsTextFieldFocused: Bool
     let numberFormatter: NumberFormatter
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 15) { // Use VStack to space out GroupBoxes
+        VStack(alignment: .leading, spacing: 15) {
             GroupBox(label: Text("SETUP").font(.caption).foregroundColor(.secondary)) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
@@ -36,6 +37,15 @@ private struct AsthmaMedDetailsView: View {
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .frame(maxWidth: 100)
+                            .focused($isPuffsTextFieldFocused)
+                            .toolbar {
+                                ToolbarItemGroup(placement: .keyboard) {
+                                    Spacer()
+                                    Button("Done") {
+                                        isPuffsTextFieldFocused = false
+                                    }
+                                }
+                            }
                     }
 
                     Picker("Frequency:", selection: $log.asthmaMedFrequency) { 
@@ -53,7 +63,7 @@ private struct AsthmaMedDetailsView: View {
                         }
                     }
                 }
-                .padding(.top, 5) // Add a little space below the GroupBox label
+                .padding(.top, 5)
             }
             .animation(.default, value: log.asthmaMedFrequency)
 
@@ -65,7 +75,7 @@ private struct AsthmaMedDetailsView: View {
                             .padding(.trailing)
                             
                         if log.asthmaMedFrequency == .twiceADay { 
-                            let dose2Binding = Binding<Bool>(
+                            let dose2Binding: Binding<Bool> = Binding<Bool>(
                                 get: { log.didAdministerAsthmaMedDose2 ?? false }, 
                                 set: { newValue in log.didAdministerAsthmaMedDose2 = newValue } 
                             )
@@ -75,7 +85,7 @@ private struct AsthmaMedDetailsView: View {
                                 .transition(.opacity.combined(with: .slide))
                         }
                     }
-                    .padding(.top, 5) // Add a little space below the GroupBox label
+                    .padding(.top, 5)
                 }
             }
         }
@@ -85,11 +95,11 @@ private struct AsthmaMedDetailsView: View {
 
 #Preview { 
     struct PreviewWrapper: View {
-        @State private var sampleLogAsthmaScheduled = DailyLog(date: Date(), asthmaMedDosagePuffs: 2, asthmaMedFrequency: .twiceADay, didAdministerAsthmaMedDose1: false)
-        @State private var sampleLogAsthmaNotScheduled = DailyLog(date: Date(), asthmaMedFrequency: nil)
+        @State private var sampleLogAsthmaScheduled: DailyLog = DailyLog(date: Date(), asthmaMedDosagePuffs: 2, asthmaMedFrequency: .twiceADay, didAdministerAsthmaMedDose1: false)
+        @State private var sampleLogAsthmaNotScheduled: DailyLog = DailyLog(date: Date(), asthmaMedFrequency: nil)
         @State private var isExpanded1: Bool = true
         @State private var isExpanded2: Bool = true
-        let formatter = numberFormatter 
+        let formatter: NumberFormatter = numberFormatter 
         var body: some View {
              List { 
                  AsthmaMedSectionView(log: sampleLogAsthmaScheduled, numberFormatter: formatter, isExpanded: $isExpanded1)
