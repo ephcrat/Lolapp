@@ -195,10 +195,10 @@ struct DayDetailView: View {
         guard log == editingLog else { return }
         
         // Compare current log values against the global defaults
-        let isAtDefaults = 
+        let isAtDefaults: Bool = 
             log.coughCount == ModelDefaults.coughCount &&
             (log.notes ?? "").isEmpty &&
-            log.foodEntries.isEmpty &&
+            (log.foodEntries ?? []).isEmpty &&
             log.softFoodTargetGrams == ModelDefaults.softFoodTargetGrams &&
             log.isPrednisoneScheduled == ModelDefaults.isPrednisoneScheduled &&
             log.prednisoneDosageDrops == ModelDefaults.prednisoneDosageDrops &&

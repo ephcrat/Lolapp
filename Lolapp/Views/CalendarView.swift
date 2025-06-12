@@ -4,7 +4,7 @@ import SwiftData // Import SwiftData
 struct CalendarView: View {
     // Environment variable to detect app lifecycle changes
     @Environment(\.scenePhase) private var scenePhase: ScenePhase
-    @Environment(\.modelContext) private var modelContext // Add modelContext
+    @Environment(\.modelContext) private var modelContext: ModelContext
     
     // State variable to keep track of the month being displayed.
     // It defaults to the current month when the view first appears.
@@ -78,8 +78,8 @@ struct CalendarView: View {
 
                 // Calendar Grid
                 LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(daysInMonth(), id: \.self) { date in
-                        if let date = date {
+                    ForEach(Array(daysInMonth().enumerated()), id: \.offset) { index, date in
+                        if let date: Date = date {
                             let logForDay = logsForMonthDict[date]
                             NavigationLink(destination: DayDetailView(selectedDate: date)) {
                                 DayCellView(date: date, dailyLog: logForDay, appBecameActiveTrigger: appBecameActiveTrigger)
@@ -105,7 +105,7 @@ struct CalendarView: View {
                         addCoughForToday()
                     } label: {
                         Label("Add Cough for Today", systemImage: "plus.circle.fill")
-                            .symbolRenderingMode(.multicolor) // Makes the plus green within the circle
+                            .symbolRenderingMode(.multicolor)
                     }
                 }
             }
@@ -144,39 +144,39 @@ struct CalendarView: View {
     // for days outside the current month to align weeks correctly.
     private func daysInMonth() -> [Date?] {
         guard let monthInterval: DateInterval = calendar.dateInterval(of: .month, for: displayMonth),
-              let firstDayOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: monthInterval.start))
+              let firstDayOfMonth: Date = calendar.date(from: calendar.dateComponents([.year, .month], from: monthInterval.start))
         else {
             return []
         }
         
         // Calculate the first visible day in the calendar grid
         // This should be the first day of the week that contains the first day of the month
-        var startDateComponents = calendar.dateComponents([.year, .month, .day, .weekday], from: firstDayOfMonth)
-        let weekdayOffset = (7 + startDateComponents.weekday! - calendar.firstWeekday) % 7
+        var startDateComponents: DateComponents = calendar.dateComponents([.year, .month, .day, .weekday], from: firstDayOfMonth)
+        let weekdayOffset: Int = (7 + startDateComponents.weekday! - calendar.firstWeekday) % 7
         startDateComponents.day = startDateComponents.day! - weekdayOffset
         
-        guard let startDate = calendar.date(from: startDateComponents) else {
+        guard let startDate: Date = calendar.date(from: startDateComponents) else {
             return []
         }
         
         // Calculate the last visible day in the calendar grid
         // This should be the last day of the week that contains the last day of the month
-        guard let lastDayOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: firstDayOfMonth),
-              var endDateComponents = calendar.dateComponents([.year, .month, .day, .weekday], from: lastDayOfMonth) as DateComponents?
+        guard let lastDayOfMonth: Date = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: firstDayOfMonth),
+              var endDateComponents: DateComponents = calendar.dateComponents([.year, .month, .day, .weekday], from: lastDayOfMonth) as DateComponents?
         else {
             return []
         }
         
-        let daysToAdd = (7 - ((endDateComponents.weekday! - calendar.firstWeekday + 7) % 7)) % 7
+        let daysToAdd: Int = (7 - ((endDateComponents.weekday! - calendar.firstWeekday + 7) % 7)) % 7
         endDateComponents.day = endDateComponents.day! + daysToAdd
         
-        guard let endDate = calendar.date(from: endDateComponents) else {
+        guard let endDate: Date = calendar.date(from: endDateComponents) else {
             return []
         }
         
         // Create the array of dates (and nil placeholders) for the entire visible calendar
         var days: [Date?] = []
-        var currentDate = startDate
+        var currentDate: Date = startDate
         
         // Use a consistent way to add days
         while currentDate <= endDate {
@@ -189,7 +189,7 @@ struct CalendarView: View {
             }
             
             // Move to the next day safely
-            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+            guard let nextDate: Date = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
                 break
             }
             currentDate = nextDate

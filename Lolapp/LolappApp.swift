@@ -11,10 +11,11 @@ import SwiftData
 @main
 struct LolappApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
+        let schema: Schema = Schema([
             DailyLog.self,
+            FoodEntry.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let modelConfiguration: ModelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .automatic)
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])

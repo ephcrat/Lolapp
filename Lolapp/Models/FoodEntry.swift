@@ -3,8 +3,9 @@ import SwiftData
 
 @Model
 final class FoodEntry {
-    var timestamp: Date
-    var grams: Int
+    // Add default values for CloudKit compatibility
+    var timestamp: Date = Date()
+    var grams: Int = 0
     
     // Link back to the DailyLog
     // This creates a many-to-one relationship: many FoodEntry instances can belong to one DailyLog.

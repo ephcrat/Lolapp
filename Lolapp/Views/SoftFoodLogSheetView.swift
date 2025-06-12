@@ -8,6 +8,9 @@ struct SoftFoodLogSheetView: View {
     @Bindable var log: DailyLog
     @State private var gramsToAddText: String = ""
 
+    private var foodEntries: [FoodEntry] {
+        log.foodEntries ?? []
+    }
 
     // Enum to identify focusable fields
     private enum Field: Hashable {
@@ -75,12 +78,12 @@ struct SoftFoodLogSheetView: View {
                     }
 
                     Section(header: Text("Logged Entries")) {
-                        if log.foodEntries.isEmpty {
+                        if foodEntries.isEmpty {
                             Text("No food entries logged yet for today.")
                                 .foregroundColor(.secondary)
                         } else {
                             List {
-                                ForEach(log.foodEntries.sorted(by: { $0.timestamp > $1.timestamp })) { entry in
+                                ForEach(foodEntries.sorted(by: { $0.timestamp > $1.timestamp })) { entry in
                                     HStack {
                                         Text("\(entry.grams)g")
                                         Spacer()
@@ -125,20 +128,27 @@ struct SoftFoodLogSheetView: View {
         guard let grams = Int(gramsToAddText), grams > 0 else { return }
         
         let newFoodEntry = FoodEntry(timestamp: Date(), grams: grams, dailyLog: log)
-        log.foodEntries.append(newFoodEntry)
+        
+        if log.foodEntries == nil {
+            log.foodEntries = []
+        }
+        log.foodEntries?.append(newFoodEntry)
+        
         log.lastModified = Date()
         gramsToAddText = ""
         dismissKeyboard()
     }
 
     private func deleteFoodEntry(at offsets: IndexSet) {
-        let sortedEntries = log.foodEntries.sorted(by: { $0.timestamp > $1.timestamp })
+        let sortedEntries = foodEntries.sorted(by: { $0.timestamp > $1.timestamp })
         for index in offsets {
             let entryToDelete = sortedEntries[index]
-            if let originalIndex = log.foodEntries.firstIndex(where: { $0.id == entryToDelete.id }) {
-                let entryBeingDeleted = log.foodEntries.remove(at: originalIndex)
-                modelContext.delete(entryBeingDeleted)
+            
+            if let modelIndex = log.foodEntries?.firstIndex(where: { $0.id == entryToDelete.id }) {
+                log.foodEntries?.remove(at: modelIndex)
             }
+            
+            modelContext.delete(entryToDelete)
         }
         log.lastModified = Date()
     }
@@ -154,8 +164,12 @@ struct SoftFoodLogSheetView: View {
     let sampleLog: DailyLog = DailyLog(date: Date(), softFoodTargetGrams: 280)
     let entry1: FoodEntry = FoodEntry(timestamp: Calendar.current.date(byAdding: .hour, value: -2, to: Date())!, grams: 50, dailyLog: sampleLog)
     let entry2: FoodEntry = FoodEntry(timestamp: Calendar.current.date(byAdding: .hour, value: -1, to: Date())!, grams: 70, dailyLog: sampleLog)
-    sampleLog.foodEntries.append(entry1)
-    sampleLog.foodEntries.append(entry2)
+    
+    if sampleLog.foodEntries == nil {
+        sampleLog.foodEntries = []
+    }
+    sampleLog.foodEntries?.append(entry1)
+    sampleLog.foodEntries?.append(entry2)
     container.mainContext.insert(sampleLog)
 
     struct PreviewHost: View {
@@ -168,6 +182,7 @@ struct SoftFoodLogSheetView: View {
             }
         }
     }
+    
     return PreviewHost(logForSheet: sampleLog)
         .modelContainer(container)
 } 

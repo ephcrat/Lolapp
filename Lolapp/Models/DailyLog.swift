@@ -5,7 +5,7 @@ import SwiftData
 // Conforming to Codable makes it easily storable by SwiftData.
 // CaseIterable allows us to easily get all cases (e.g., for a Picker).
 // Identifiable provides a stable ID (itself in this case) for UI elements like ForEach.
-enum Frequency: Codable, CaseIterable, Identifiable {
+enum Frequency: String, Codable, CaseIterable, Identifiable {
     case onceADay
     case twiceADay
 
@@ -27,50 +27,41 @@ enum Frequency: Codable, CaseIterable, Identifiable {
 // It automatically handles persistence (saving/loading to disk)
 // and generates the necessary database schema. `final class` means
 // this class cannot be subclassed, which is common for models.
+// NOTE: CloudKit does not support unique constraints, so we cannot use @Attribute(.unique)
+// NOTE: CloudKit requires all attributes to be optional OR have default values. Also requires all relationships to be optional
 @Model
 final class DailyLog {
-    // Unique identifier for each log entry, tied to the specific day.
-    // Using @Attribute(.unique) ensures SwiftData enforces that
-    // no two DailyLog objects can have the same 'date' value.
-    @Attribute(.unique) var date: Date
+    var date: Date = Date()
 
-    // Tracking variables - initialized with default values in the init.
-    var coughCount: Int
-    var notes: String? // String? means it's an optional String, can be nil.
-    var softFoodTargetGrams: Int
+    var coughCount: Int = ModelDefaults.coughCount
+    var notes: String? = ModelDefaults.notes
+    var softFoodTargetGrams: Int = ModelDefaults.softFoodTargetGrams
 
-    // Relationship to FoodEntry. Default to an empty array.
-    // SwiftData handles the inverse relationship from FoodEntry.dailyLog
-    // The .cascade delete rule means if a DailyLog is deleted, all its associated FoodEntry records are also deleted.
+    // MUST be optional for CloudKit compatibility
     @Relationship(deleteRule: .cascade, inverse: \FoodEntry.dailyLog)
-    var foodEntries: [FoodEntry] = []
+    var foodEntries: [FoodEntry]? = []
 
     // Computed property for total grams of soft food given
     var softFoodGivenGrams: Int {
-        foodEntries.reduce(0) { $0 + $1.grams }
+        foodEntries?.reduce(0) { $0 + $1.grams } ?? 0
     }
 
-    // Prednisone specific tracking
-    var isPrednisoneScheduled: Bool
-    var prednisoneDosageDrops: Int?
-    var prednisoneFrequency: Frequency?
-    var didAdministerPrednisoneDose1: Bool
-    var didAdministerPrednisoneDose2: Bool?
+    // Prednisone specific tracking - add default values
+    var isPrednisoneScheduled: Bool = ModelDefaults.isPrednisoneScheduled
+    var prednisoneDosageDrops: Int? = ModelDefaults.prednisoneDosageDrops
+    var prednisoneFrequency: Frequency? = ModelDefaults.prednisoneFrequency
+    var didAdministerPrednisoneDose1: Bool = ModelDefaults.didAdministerPrednisoneDose1
+    var didAdministerPrednisoneDose2: Bool? = ModelDefaults.didAdministerPrednisoneDose2
 
-    // Asthma Medication specific tracking
-    var asthmaMedDosagePuffs: Int?
-    var asthmaMedFrequency: Frequency?
-    var didAdministerAsthmaMedDose1: Bool
-    var didAdministerAsthmaMedDose2: Bool?
+    // Asthma Medication specific tracking - add default values
+    var asthmaMedDosagePuffs: Int? = ModelDefaults.asthmaMedDosagePuffs
+    var asthmaMedFrequency: Frequency? = ModelDefaults.asthmaMedFrequency
+    var didAdministerAsthmaMedDose1: Bool = ModelDefaults.didAdministerAsthmaMedDose1
+    var didAdministerAsthmaMedDose2: Bool? = ModelDefaults.didAdministerAsthmaMedDose2
 
-    // Timestamp for CloudKit conflict resolution. SwiftData uses this
-    // field when syncing with iCloud to determine which version of the
-    // data is newer if changes were made on multiple devices.
-    var lastModified: Date
+    var lastModified: Date = Date()
 
-    // Initializer (constructor) to create a new DailyLog instance.
-    // It takes a 'date' and provides default values for all other properties
-    init(date: Date,
+    init(date: Date = Date(),
          coughCount: Int = ModelDefaults.coughCount,
          notes: String? = ModelDefaults.notes,
          foodEntries: [FoodEntry] = [],
