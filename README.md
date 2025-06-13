@@ -39,14 +39,14 @@ This is a personal app I built to manage my cat's asthma care. It provides a sim
 ## Installation
 
 ### Requirements
-- iOS 17.0 or later
+- iOS 18.0 or later
 - iCloud account for synchronization
 - Xcode 15.0+ (for development)
 
 ### Building from Source
 ```bash
 # Clone the repository
-git clone [repository-url]
+git clone https://github.com/ephcrat/Lolapp.git
 cd Lolapp
 
 # Open in Xcode
