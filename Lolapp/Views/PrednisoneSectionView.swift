@@ -2,32 +2,28 @@ import SwiftUI
 import SwiftData
 
 struct PrednisoneSectionView: View {
-    // Use @Bindable to receive the mutable log object from the parent view
     @Bindable var log: DailyLog
-    // Receive the formatter from the parent view
     let numberFormatter: NumberFormatter
     @Binding var isExpanded: Bool
+    let focusedField: FocusState<FocusedField?>.Binding
     
     var body: some View {
-        // The DisclosureGroup itself acts as a row
         DisclosureGroup(
-            isExpanded: $isExpanded, // Uses the binding
+            isExpanded: $isExpanded,
             content: {
-                // PrednisoneDetailsView now contains the primary toggle and all related controls
-                PrednisoneDetailsView(log: log, numberFormatter: numberFormatter)
+                PrednisoneDetailsView(log: log, numberFormatter: numberFormatter, focusedField: focusedField)
             },
             label: {
                 Label("Prednisone", systemImage: "eyedropper.halffull")
             }
         )
-        .animation(.default, value: isExpanded) // Animation for expand/collapse
     }
 }
 
-// --- Private Helper View for Prednisone Details --- 
 private struct PrednisoneDetailsView: View {
     @Bindable var log: DailyLog
     let numberFormatter: NumberFormatter
+    let focusedField: FocusState<FocusedField?>.Binding
     
     var body: some View {
         VStack(alignment: .leading, spacing: 15) { // Use VStack to space out GroupBoxes
@@ -46,7 +42,7 @@ private struct PrednisoneDetailsView: View {
                                 log.didAdministerPrednisoneDose2 = nil
                             }
                         }
-
+                    
                     if log.isPrednisoneScheduled {
                         HStack {
                             Text("Dosage (drops):")
@@ -55,8 +51,9 @@ private struct PrednisoneDetailsView: View {
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                                 .frame(maxWidth: 100)
+                                .focused(focusedField, equals: .prednisoneDosage)
                         }
-
+                        
                         Picker("Frequency:", selection: $log.prednisoneFrequency) {
                             Text("Not Set").tag(nil as Frequency?)
                             ForEach(Frequency.allCases) { freq in
@@ -70,17 +67,17 @@ private struct PrednisoneDetailsView: View {
                         }
                     }
                 }
-                .padding(.top, 5) // Add a little space below the GroupBox label
+                .padding(.top, 5)
+                
             }
-            .animation(.default, value: log.isPrednisoneScheduled)
-
+            
             if log.isPrednisoneScheduled && log.prednisoneFrequency != nil {
                 GroupBox(label: Text("ADMINISTRATION").font(.caption).foregroundColor(.secondary)) {
                     VStack(alignment: .leading, spacing: 10) {
                         Toggle("Administered Dose 1", isOn: $log.didAdministerPrednisoneDose1)
                             .toggleStyle(.switch)
                             .padding(.trailing)
-                            
+                        
                         if log.prednisoneFrequency == .twiceADay {
                             let dose2Binding: Binding<Bool> = Binding<Bool>(
                                 get: { log.didAdministerPrednisoneDose2 ?? false },
@@ -93,31 +90,32 @@ private struct PrednisoneDetailsView: View {
                                 .transition(.opacity.combined(with: .slide))
                         }
                     }
-                    .padding(.top, 5) // Add a little space below the GroupBox label
+                    .padding(.top, 5)
                 }
                 .animation(.default, value: log.prednisoneFrequency)
+                
             }
         }
         .padding(.leading, -16)
+        .animation(.smooth, value: log.isPrednisoneScheduled)
     }
 }
 
-// Add a specific preview for this section if desired (optional)
 #Preview { 
-    // Need a dummy log and context for previewing this isolated section
     struct PreviewWrapper: View {
         @State private var sampleLogIsPrednisoneScheduled = DailyLog(date: Date(), isPrednisoneScheduled: true, prednisoneFrequency: .twiceADay)
         @State private var sampleLogNotPrednisoneScheduled = DailyLog(date: Date(), isPrednisoneScheduled: false)
         @State private var isExpanded1: Bool = true
         @State private var isExpanded2: Bool = true // So we can see the not scheduled state too
         let formatter: NumberFormatter = numberFormatter
+        @FocusState private var focusedField: FocusedField?
         
         var body: some View {
-             List { // Use List to see DisclosureGroup in a list context
-                 PrednisoneSectionView(log: sampleLogIsPrednisoneScheduled, numberFormatter: formatter, isExpanded: $isExpanded1)
-                 PrednisoneSectionView(log: sampleLogNotPrednisoneScheduled, numberFormatter: formatter, isExpanded: $isExpanded2)
-             }
-             .listStyle(.insetGrouped)
+            List { // Use List to see DisclosureGroup in a list context
+                PrednisoneSectionView(log: sampleLogIsPrednisoneScheduled, numberFormatter: formatter, isExpanded: $isExpanded1, focusedField: $focusedField)
+                PrednisoneSectionView(log: sampleLogNotPrednisoneScheduled, numberFormatter: formatter, isExpanded: $isExpanded2, focusedField: $focusedField)
+            }
+            .listStyle(.insetGrouped)
         }
     }
     return PreviewWrapper()

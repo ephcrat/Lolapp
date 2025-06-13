@@ -3,16 +3,16 @@ import SwiftData
 
 struct DayCellView: View {
     let date: Date
-    let dailyLog: DailyLog? // The log for this specific date, if it exists
+    let dailyLog: DailyLog?
     let appBecameActiveTrigger: Bool // Trigger to force a re-evaluation of isToday
-
+    
     private let calendar: Calendar = Calendar.current
     private var isToday: Bool {
         let today: Date = calendar.startOfDay(for: Date())
         let cellDate: Date = calendar.startOfDay(for: date)
         return calendar.isDate(cellDate, inSameDayAs: today)
     }
-
+    
     var body: some View {
         VStack {
             Text("\(calendar.component(.day, from: date))")
@@ -20,45 +20,43 @@ struct DayCellView: View {
                 .padding(8)
                 .frame(maxWidth: .infinity) // Expand horizontally
                 .background(backgroundForDay())
-                .clipShape(Circle()) // Make it circular
+                .clipShape(Circle())
                 .overlay(
                     Circle()
                         .stroke(isToday ? Color.blue : Color.clear, lineWidth: 2) // Blue border for today
                 )
                 .overlay(alignment: .bottomTrailing) {
-                     // Add indicator dot if needed
-                     if showPrednisoneDot() {
-                         Circle()
-                             .fill(Color.red) // High-contrast color for the dot
-                             .frame(width: 8, height: 8)
-                             .padding(4) // Padding from the corner
-                     }
-                 }
+                    if showPrednisoneDot() {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 8, height: 8)
+                            .padding(4)
+                    }
+                }
         }
-        .frame(minHeight: 50) // Ensure consistent cell height
+        .frame(minHeight: 50)
     }
-
+    
     // --- Helper Functions for Visualization --- 
-
-    /// Determines the background color/opacity based on cough count.
+    
+    
     private func backgroundForDay() -> Color {
         guard let log: DailyLog = dailyLog else {
             return Color.gray.opacity(0.1) // Default background for days with no log
         }
-
+        
         let opacity: Double = switch log.coughCount {
-            case 0: 0.1
-            case 1: 0.35
-            case 2: 0.55
-            case 3: 0.75
-            case 4...6: 0.9
-            default: 1.0
+        case 0: 0.1
+        case 1: 0.35
+        case 2: 0.55
+        case 3: 0.75
+        case 4...6: 0.9
+        default: 1.0
         }
         
         return Color.purple.opacity(opacity)
     }
-
-    /// Determines if the prednisone indicator dot should be shown.
+    
     private func showPrednisoneDot() -> Bool {
         return dailyLog?.isPrednisoneScheduled ?? false
     }
@@ -67,20 +65,17 @@ struct DayCellView: View {
 // --- Preview --- 
 
 #Preview("No Log") {
-    // Preview for a day with no log entry
     DayCellView(date: Date(), dailyLog: nil, appBecameActiveTrigger: false)
         .padding()
 }
 
 #Preview("Today With Log") {
-    // Preview for today with a sample log
     let log: DailyLog = DailyLog(date: Date(), coughCount: 4, isPrednisoneScheduled: true)
     return DayCellView(date: Date(), dailyLog: log, appBecameActiveTrigger: false)
         .padding()
 }
 
 #Preview("Other Day No Dot") {
-    // Preview for another day with a log but no prednisone
     let date: Date = Calendar.current.date(byAdding: .day, value: -5, to: Date())!
     let log: DailyLog = DailyLog(date: date, coughCount: 1)
     return DayCellView(date: date, dailyLog: log, appBecameActiveTrigger: false)

@@ -9,22 +9,22 @@ struct CalendarView: View {
     // State variable to keep track of the month being displayed.
     // It defaults to the current month when the view first appears.
     @State private var displayMonth: Date = Date()
-
+    
     // SwiftData Query: Fetches all DailyLog objects, sorted by date.
     // We will filter this array later based on the displayMonth.
     // The `sort:` parameter ensures the data is ordered.
     @Query(sort: \DailyLog.date) private var dailyLogs: [DailyLog]
-
+    
     // Access the system's calendar
     private let calendar: Calendar = Calendar.current
     // Define the grid columns for the days (7 days a week)
     private let columns: [GridItem] = Array(repeating: .init(.flexible()), count: 7)
-
+    
     // We need a way to tell DayCellView to re-evaluate isToday
     // This is a @State variable that we toggle to force redraws
     // when the app becomes active and the day might have changed.
     @State private var appBecameActiveTrigger: Bool = false
-
+    
     // Computed property to create a lookup dictionary from the logs
     // This dictionary maps a normalized Date (start of day) to its DailyLog.
     // It recalculates whenever dailyLogs or displayMonth changes.
@@ -45,13 +45,13 @@ struct CalendarView: View {
         // We assume dates are unique due to the @Attribute(.unique) on DailyLog.date
         return Dictionary(uniqueKeysWithValues: logsInMonth.map { ($0.date, $0) })
     }
-
+    
     var body: some View {
         NavigationView { // Embed in NavigationView for title and potential future navigation
             VStack {
                 // Header: Month/Year and Navigation Buttons
                 CalendarHeaderView(displayMonth: $displayMonth)
-
+                
                 // Day of the Week Labels
                 HStack {
                     // Get the symbols array first, and ensure their order matches how we calculate dates
@@ -75,7 +75,7 @@ struct CalendarView: View {
                     }
                 }
                 .padding(.horizontal)
-
+                
                 // Calendar Grid
                 LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(Array(daysInMonth().enumerated()), id: \.offset) { index, date in
@@ -93,7 +93,7 @@ struct CalendarView: View {
                     }
                 }
                 .padding()
-
+                
                 Spacer() // Pushes everything to the top
             }
             .navigationTitle("Home") // Title for the view
@@ -120,7 +120,7 @@ struct CalendarView: View {
         }
         // Also re-calculate if the underlying log data changes
         .onChange(of: dailyLogs) { _, _ in
-             // Same as above, the computed property handles this automatically.
+            // Same as above, the computed property handles this automatically.
         }
         // Add onChange for scenePhase
         .onChange(of: scenePhase) { oldPhase, newPhase in
@@ -139,7 +139,7 @@ struct CalendarView: View {
             }
         }
     }
-
+    
     // Helper function to generate the dates for the grid, including padding
     // for days outside the current month to align weeks correctly.
     private func daysInMonth() -> [Date?] {
@@ -197,7 +197,7 @@ struct CalendarView: View {
         
         return days
     }
-
+    
     /// Finds or creates a DailyLog for today and increments its cough count.
     private func addCoughForToday() {
         let today = calendar.startOfDay(for: Date()) // Normalize today's date
@@ -223,7 +223,7 @@ struct CalendarView: View {
 struct CalendarHeaderView: View {
     @Binding var displayMonth: Date // Use @Binding to modify the state in the parent view
     private let calendar: Calendar = Calendar.current
-
+    
     var body: some View {
         HStack {
             // Previous Month Button
@@ -234,16 +234,16 @@ struct CalendarHeaderView: View {
                     .padding()
                     .contentShape(Rectangle()) // Increase tappable area
             }
-
+            
             Spacer()
-
+            
             // Month and Year Display
             Text(monthYearString(from: displayMonth))
                 .font(.title2.weight(.semibold)) // Slightly larger font
                 .padding(.vertical)
-
+            
             Spacer()
-
+            
             // Next Month Button
             Button {
                 changeMonth(by: 1)
@@ -255,7 +255,7 @@ struct CalendarHeaderView: View {
         }
         .padding(.horizontal)
     }
-
+    
     // Function to change the displayed month
     private func changeMonth(by months: Int) {
         // Use the calendar to safely add/subtract months
@@ -263,7 +263,7 @@ struct CalendarHeaderView: View {
             displayMonth = newMonth
         }
     }
-
+    
     // Function to format the date into "Month Year"
     private func monthYearString(from date: Date) -> String {
         let formatter: DateFormatter = DateFormatter()
@@ -279,7 +279,7 @@ struct CalendarHeaderView: View {
     do {
         let config: ModelConfiguration = ModelConfiguration(isStoredInMemoryOnly: true)
         let container: ModelContainer = try ModelContainer(for: DailyLog.self, configurations: config)
-
+        
         // Add multiple sample logs for better preview testing
         let todayLog = DailyLog(date: Date(), coughCount: 1, isPrednisoneScheduled: true)
         let yesterdayLog = DailyLog(date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!, coughCount: 4, isPrednisoneScheduled: false)
@@ -290,7 +290,7 @@ struct CalendarHeaderView: View {
         container.mainContext.insert(yesterdayLog)
         container.mainContext.insert(twoDaysAgoLog)
         container.mainContext.insert(fiveDaysAgoLog)
-
+        
         return CalendarView()
             .modelContainer(container) // Provide the container to the view
     } catch {

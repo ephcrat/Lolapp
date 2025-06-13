@@ -7,36 +7,30 @@ struct SoftFoodLogSheetView: View {
     
     @Bindable var log: DailyLog
     @State private var gramsToAddText: String = ""
-
+    @State private var targetGramsText: String = ""
+    @FocusState private var isKeyboardVisible: Bool
+    
     private var foodEntries: [FoodEntry] {
         log.foodEntries ?? []
     }
-
+    
     // Enum to identify focusable fields
     private enum Field: Hashable {
         case targetGrams
         case gramsToAdd
     }
-
+    
     private var foodRemainingGrams: Int {
         log.softFoodTargetGrams - log.softFoodGivenGrams
     }
-
-    // Date formatter for the food entry time
+    
     private var timeFormatter: DateFormatter {
         let formatter: DateFormatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         return formatter
     }
     
-    private var entryNumberFormatter: NumberFormatter {
-        let formatter: NumberFormatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.minimum = 1 // Food entry must be at least 1 gram
-        formatter.allowsFloats = false
-        return formatter
-    }
-
+    
     var body: some View {
         NavigationView {
             // Wrap Form in a VStack to apply tap gesture to the whole area
@@ -46,10 +40,13 @@ struct SoftFoodLogSheetView: View {
                         HStack {
                             Text("Target:")
                             Spacer()
-                            TextField("Grams", value: $log.softFoodTargetGrams, formatter: numberFormatter)
+                            TextField("Grams", text: $targetGramsText)
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                                 .fixedSize(horizontal: true, vertical: false)
+                                .focused($isKeyboardVisible)
+                                .onChange(of: targetGramsText) { _, newValue in onGramsEntered(targetGramsText: newValue) }
+                                .onAppear { targetGramsText = String(log.softFoodTargetGrams) }
                             Text("g")
                         }
                         HStack {
@@ -70,13 +67,14 @@ struct SoftFoodLogSheetView: View {
                         HStack {
                             TextField("Grams to add", text: $gramsToAddText)
                                 .keyboardType(.numberPad)
+                                .focused($isKeyboardVisible)
                             Button("Add") {
                                 addFoodEntry()
                             }
                             .disabled(!isValidInput())
                         }
                     }
-
+                    
                     Section(header: Text("Logged Entries")) {
                         if foodEntries.isEmpty {
                             Text("No food entries logged yet for today.")
@@ -106,17 +104,17 @@ struct SoftFoodLogSheetView: View {
                         dismissSheet()
                     }
                 }
-                // Keyboard toolbar for the "Done" button
+                
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button("Done") {
-                        dismissKeyboard()
+                        isKeyboardVisible = false
                     }
                 }
             }
         }
     }
-
+    
     private func isValidInput() -> Bool {
         guard let amount = Int(gramsToAddText), amount > 0 else {
             return false
@@ -136,9 +134,9 @@ struct SoftFoodLogSheetView: View {
         
         log.lastModified = Date()
         gramsToAddText = ""
-        dismissKeyboard()
+        isKeyboardVisible = false
     }
-
+    
     private func deleteFoodEntry(at offsets: IndexSet) {
         let sortedEntries = foodEntries.sorted(by: { $0.timestamp > $1.timestamp })
         for index in offsets {
@@ -152,10 +150,19 @@ struct SoftFoodLogSheetView: View {
         }
         log.lastModified = Date()
     }
-
-    private func dismissKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    
+    private func onGramsEntered(targetGramsText: String) {
+        let filtered: String = targetGramsText.filter { $0.isNumber }
+        if filtered != targetGramsText {
+            self.targetGramsText = filtered
+            gramsToAddText = filtered
+        }
+        if let intValue: Int = Int(filtered), intValue > 0 {
+            log.softFoodTargetGrams = intValue
+            log.lastModified = Date()
+        }
     }
+    
 }
 
 #Preview {
@@ -171,15 +178,15 @@ struct SoftFoodLogSheetView: View {
     sampleLog.foodEntries?.append(entry1)
     sampleLog.foodEntries?.append(entry2)
     container.mainContext.insert(sampleLog)
-
+    
     struct PreviewHost: View {
         @State var showSheet: Bool = true
         var logForSheet: DailyLog
         var body: some View {
             VStack { Text("Preview Host Content") }
-            .sheet(isPresented: $showSheet) {
-                SoftFoodLogSheetView(log: logForSheet)
-            }
+                .sheet(isPresented: $showSheet) {
+                    SoftFoodLogSheetView(log: logForSheet)
+                }
         }
     }
     

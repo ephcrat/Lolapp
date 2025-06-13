@@ -3,12 +3,11 @@ import SwiftData
 
 struct NotesSectionView: View {
     @Bindable var log: DailyLog
+    let focusedField: FocusState<FocusedField?>.Binding
     
-    @FocusState private var isTextEditorFocused: Bool
-    // Custom binding to handle the optional String for TextEditor
     private var notesBinding: Binding<String> {
         Binding<String>(
-            get: { log.notes ?? "" }, // Return empty string if notes is nil
+            get: { log.notes ?? "" },
             set: { newValue in
                 // Only set to nil if the new value is truly empty,
                 // otherwise update with the new string.
@@ -22,7 +21,7 @@ struct NotesSectionView: View {
         TextEditor(text: notesBinding)
             .frame(minHeight: 100, maxHeight: 200)
             .scrollContentBackground(.hidden)
-            .focused($isTextEditorFocused)
+            .focused(focusedField, equals: .notes)
     }
 }
 
@@ -31,15 +30,16 @@ struct NotesSectionView: View {
     struct PreviewWrapper: View {
         @State private var sampleLogWithNotes: DailyLog = DailyLog(date: Date(), notes: "Ate well today. Seemed calm.")
         @State private var sampleLogNoNotes: DailyLog = DailyLog(date: Date())
+        @FocusState private var focusedField: FocusedField?
         
         var body: some View {
             // Using Form to mimic settings-like appearance for preview
             Form {
-                Section("Notes") { // Add a section header for context in preview
-                    NotesSectionView(log: sampleLogWithNotes)
+                Section("Notes") {
+                    NotesSectionView(log: sampleLogWithNotes, focusedField: $focusedField)
                 }
                 Section("Notes (Empty)") {
-                    NotesSectionView(log: sampleLogNoNotes)
+                    NotesSectionView(log: sampleLogNoNotes, focusedField: $focusedField)
                 }
             }
         }

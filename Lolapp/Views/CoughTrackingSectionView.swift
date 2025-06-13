@@ -17,11 +17,11 @@ struct CoughTrackingSectionView: View {
                     .foregroundColor(.gray)
             }
             .buttonStyle(.plain)
-
+            
             Text("\(log.coughCount)")
                 .font(.headline)
                 .frame(minWidth: 30, alignment: .center)
-
+            
             Button {
                 if log.coughCount < 100 {
                     log.coughCount += 1
@@ -42,7 +42,7 @@ struct CoughTrackingSectionView: View {
         
         var body: some View {
             List {
-                 CoughTrackingSectionView(log: sampleLog)
+                CoughTrackingSectionView(log: sampleLog)
             }
         }
     }

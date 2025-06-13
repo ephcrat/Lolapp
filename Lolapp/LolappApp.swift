@@ -8,6 +8,8 @@
 import SwiftUI
 import SwiftData
 
+let DEFAULT_ACCENT_COLOR: Color = Color.purple
+
 @main
 struct LolappApp: App {
     var sharedModelContainer: ModelContainer = {
@@ -16,19 +18,19 @@ struct LolappApp: App {
             FoodEntry.self,
         ])
         let modelConfiguration: ModelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false, cloudKitDatabase: .automatic)
-
+        
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
-
+    
     var body: some Scene {
         WindowGroup {
             CalendarView()
                 .preferredColorScheme(.light)
-                .accentColor(.purple)
+                .accentColor(DEFAULT_ACCENT_COLOR)
         }
         .modelContainer(sharedModelContainer)
     }
