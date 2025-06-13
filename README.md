@@ -1,102 +1,126 @@
-# Lolapp
+# Lolapp 🐱
 
-**Core Goal:** To provide a simple, reliable, local-first mobile application for tracking a cat's asthma symptoms (coughing), prednisone medication schedule/administration, asthma medication schedule/administration, soft food intake, daily care tasks, and relevant notes, with seamless cloud synchronization for data backup and potential multi-device access.
+A personal iOS application for tracking my cat's asthma symptoms, medication administration, and daily care routines. Built with SwiftUI and CloudKit for seamless synchronization across devices.
 
-**I. Data Model Design**
+## Overview
 
-The core data entity is `DailyLog`, representing all tracked information for a single calendar day.
+This is a personal app I built to manage my cat's asthma care. It provides a simple, intuitive interface to track daily symptoms, medication schedules, food intake, and care notes. All data syncs automatically across my devices via iCloud.
 
-- **`DailyLog` Entity (@Model for SwiftData):**
+## Features
 
-  - `date`: `Date` (Primary identifier for the day. Normalized to the start of the day).
-  - `coughCount`: `Int` (Number of coughs observed. Default: 0).
-  - `notes`: `String?` (Optional: Free-form text observations. Default: nil or empty).
-  - `lastModified`: `Date` (Timestamp for CloudKit conflict resolution).
+### 📅 Calendar Dashboard
+- **Monthly calendar view** with visual health indicators
+- **Quick cough tracking** - tap the + button to instantly log a cough for today
+- **Color-coded cells** show cough frequency at a glance
+- **Medication indicators** highlight scheduled treatment days
 
-  - **Prednisone Tracking:**
+### 📝 Daily Detail Tracking
+- **Cough monitoring** with increment/decrement controls
+- **Medication management** for both prednisone and asthma medications
+  - Flexible dosage and frequency settings
+  - Administration tracking with checkboxes
+  - Support for once or twice daily schedules
+- **Nutrition tracking** with detailed soft food logging
+  - Set daily intake targets (default: 300g)
+  - Log individual feeding sessions with timestamps
+  - View progress toward daily goals
+- **Daily notes** for observations and special circumstances
 
-    - `isPrednisoneScheduled`: `Bool` (Is prednisone scheduled for this day? Default: false).
-    - `prednisoneDosageDrops`: `Int?` (Optional: Number of drops per dose. Relevant if scheduled).
-    - `prednisoneFrequency`: `Enum?` (Optional: `.onceADay`, `.twiceADay`. Relevant if scheduled).
-    - `didAdministerPrednisoneDose1`: `Bool` (Was the first/only dose given? Default: false).
-    - `didAdministerPrednisoneDose2`: `Bool?` (Optional: Was the second dose given? Relevant if scheduled for twice daily. Default: nil or false).
+### ☁️ Cloud Synchronization
+- **Automatic iCloud sync** keeps data current across all devices
+- **Offline support** - works without internet connection
+- **Conflict resolution** ensures data integrity across devices
 
-  - **Asthma Medication (AeroChamber) Tracking:**
+### 🎯 Smart Data Management
+- **Automatic log creation** - logs are created only when you enter data and deleted when the data is at default state
+- **Clean interface** - empty days don't clutter the calendar, can clearly visualize which days contain logs
+- **Persistent tracking** - never lose important health data
 
-    - `asthmaMedDosagePuffs`: `Int?` (Optional: Number of puffs per dose. Relevant if scheduled).
-    - `asthmaMedFrequency`: `Enum?` (Optional: `.onceADay`, `.twiceADay`. Relevant if scheduled).
-    - `didAdministerAsthmaMedDose1`: `Bool` (Was the first/only dose given? Default: false).
-    - `didAdministerAsthmaMedDose2`: `Bool?` (Optional: Was the second dose given? Relevant if scheduled for twice daily. Default: nil or false).
+## Installation
 
-  - **Food Tracking:**
-    - `softFoodTargetGrams`: `Int` (User-defined target for daily soft food intake. Default: 300g).
-    - `foodEntries`: `[FoodEntry]` (A list of individual food entries. See `FoodEntry` model below).
-    - `softFoodGivenGrams`: `Int` (Computed property: Sum of grams from all `foodEntries` for the day).
+### Requirements
+- iOS 17.0 or later
+- iCloud account for synchronization
+- Xcode 15.0+ (for development)
 
-- **`FoodEntry` Entity (@Model for SwiftData):**
-  - `timestamp`: `Date` (Time the food was logged).
-  - `grams`: `Int` (Amount of food given in this entry).
-  - `dailyLog`: `DailyLog?` (Relationship linking back to the parent `DailyLog`).
+### Building from Source
+```bash
+# Clone the repository
+git clone [repository-url]
+cd Lolapp
 
-**II. User Interface (UI) & User Experience (UX) Flow**
+# Open in Xcode
+open Lolapp.xcodeproj
 
-Focus on simplicity and clarity across two main views.
+# Build and run
+⌘ + R
+```
 
-1.  **Main View: Calendar Dashboard**
+## Usage
 
-    - **Layout:** Monthly calendar grid, navigable between months.
-    - **Cells (Days):**
-      - **Background:** Opacity/Color maps to `coughCount`.
-      - **Indicator Dot (Prednisone):** If `isPrednisoneScheduled` is true.
-      - **Today's Date:** Clearly highlighted.
-    - **Interaction:** Tap day cell -> `Day Detail View`.
-    - **Quick Action:** "+ Cough" button for today's log (Implemented in `CalendarView`).
+### How It Works
+- **Calendar view** shows monthly overview with visual health indicators
+- **Tap any date** to log data for that day
+- **+ Button (top right):** Instantly add a cough for today
+- **Track multiple aspects** of the cat's health:
+   - Cough count with +/- buttons
+   - Medication schedules and administration
+   - Food intake with detailed logging
+   - Daily observations in notes
+- **Empty logs are automatically cleaned up** to keep the data tidy
 
-2.  **Day Detail View (`DayDetailView.swift`)**
 
-    - **Context:** Selected `date` displayed prominently.
-    - **Layout:** Organized into logical sections within a `ScrollView`. An `activeLog` (either existing or temporary) is used for data binding. Logic exists to create or delete `DailyLog` instances based on whether data is default or not.
-    - **Sections:**
-      - **Cough Tracking (`CoughTrackingSectionView.swift`):**
-        - Display: Current `coughCount`.
-        - Controls: "+/-" buttons to modify `coughCount`.
-      - **Prednisone Schedule & Status (`PrednisoneSectionView.swift`):**
-        - Control: Toggle "Schedule Prednisone?". Binds to `isPrednisoneScheduled`.
-        - Conditional Controls (If ON): Input for `prednisoneDosageDrops`, Picker for `prednisoneFrequency`.
-      - **Asthma Medication Schedule & Status (`AsthmaMedSectionView.swift`):**
-        - Controls: Input for `asthmaMedDosagePuffs`, Picker for `asthmaMedFrequency`.
-      - **Daily Tasks / Medication Administration (Checklist - part of medication sections):**
-        - _Prednisone:_
-          - Checkbox: "Administered Dose 1". Binds to `didAdministerPrednisoneDose1`.
-          - Checkbox: "Administered Dose 2". Binds to `didAdministerPrednisoneDose2` (visible if frequency is `.twiceADay`).
-        - _Asthma Medication:_
-          - Checkbox: "Administered Dose 1". Binds to `didAdministerAsthmaMedDose1`.
-          - Checkbox: "Administered Dose 2". Binds to `didAdministerAsthmaMedDose2` (visible if frequency is `.twiceADay`).
-      - **Soft Food Intake:**
-        - UI: A tappable row labeled "Soft Food Intake" with an icon (e.g., `fork.knife`).
-        - Display: Shows a summary like "Given [X]g / Target [Y]g".
-        - Interaction: Tapping the row presents a bottom sheet (`SoftFoodLogSheetView.swift`).
-      - **Notes (`NotesSectionView.swift`):**
-        - Input: Multi-line `TextEditor` bound to `notes`.
-    - **Interaction:** Auto-save changes via SwiftData bindings. Navigate back to Calendar.
+## Technical Details
 
-3.  **Soft Food Log Sheet (`SoftFoodLogSheetView.swift`)**
-    - Presented as a bottom sheet from the "Soft Food Intake" row in `DayDetailView`.
-    - **Layout:** `NavigationView` with sections in a `Form`.
-    - **Sections:**
-      - **Summary:**
-        - Editable `TextField` for `softFoodTargetGrams`.
-        - Display for computed `softFoodGivenGrams`.
-        - Display for `foodRemainingGrams`.
-      - **Add New Entry:**
-        - `TextField` to input grams for a new food entry.
-        - "Add" button to create and append a new `FoodEntry` to the `DailyLog.foodEntries` list (updates are reflected immediately).
-      - **Logged Entries:**
-        - `List` displaying each `FoodEntry` (grams and timestamp).
-        - Swipe-to-delete functionality for each entry.
-    - **Interaction:** "Done" button to dismiss the sheet.
+### Architecture
+- **Framework:** SwiftUI with SwiftData for persistence
+- **Cloud Sync:** CloudKit integration via SwiftData
+- **Design Pattern:** MVVM with reactive data binding
+- **Navigation:** SwiftUI declarative navigation
 
-**III. Data Management Strategy**
+### Data Model
+- **DailyLog:** Primary entity containing all daily tracking data
+- **FoodEntry:** Detailed food intake records with timestamps
+- **Smart defaults:** CloudKit-compatible with proper conflict resolution
 
-- **Local Persistence:** **SwiftData** using the `@Model` macro for `DailyLog` and `FoodEntry` entities.
-- **Cloud Synchronization:** **iCloud with CloudKit** integration via SwiftData's `.cloudKitContainer` modifier.
+### Key Files
+- `LolappApp.swift` - App entry point and SwiftData configuration
+- `Models/` - Data model definitions and default values  
+- `Views/` - SwiftUI view implementations
+
+## Development
+
+### Build Commands
+```bash
+# Standard build
+xcodebuild -project Lolapp.xcodeproj -scheme Lolapp build
+
+# Run tests
+xcodebuild -project Lolapp.xcodeproj -scheme Lolapp -destination 'platform=iOS Simulator,name=iPhone 15' test
+
+# Create archive
+xcodebuild -project Lolapp.xcodeproj -scheme Lolapp archive
+```
+
+### Project Structure
+```
+Lolapp/
+├── Models/           # SwiftData models and defaults
+├── Views/            # SwiftUI views and components
+├── Assets.xcassets/  # App icons and resources
+├── Info.plist       # App configuration
+└── Lolapp.entitlements  # CloudKit permissions
+```
+
+### CloudKit Configuration
+- Container: `iCloud.com.ephcrat.Lolapp`
+- Background sync enabled for real-time updates
+- Conflict resolution via `lastModified` timestamps
+
+## Note
+
+This is a personal app created specifically for my cat's care routine. While the code is open source and you're welcome to fork and modify it for your own needs, the app is designed around my specific use case and may not work perfectly for other pets or care scenarios without modification.
+
+## Privacy
+
+All data is stored locally on the device and synced via iCloud. No data is shared with third parties or stored on external servers beyond Apple's iCloud infrastructure.
