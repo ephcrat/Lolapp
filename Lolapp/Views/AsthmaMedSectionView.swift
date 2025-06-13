@@ -38,14 +38,6 @@ private struct AsthmaMedDetailsView: View {
                             .multilineTextAlignment(.trailing)
                             .frame(maxWidth: 100)
                             .focused($isPuffsTextFieldFocused)
-                            .toolbar {
-                                ToolbarItemGroup(placement: .keyboard) {
-                                    Spacer()
-                                    Button("Done") {
-                                        isPuffsTextFieldFocused = false
-                                    }
-                                }
-                            }
                     }
 
                     Picker("Frequency:", selection: $log.asthmaMedFrequency) { 

@@ -150,6 +150,14 @@ struct DayDetailView: View {
         .listStyle(.insetGrouped) // Apply the settings-like list style
         .navigationTitle("Daily Log")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    dismissKeyboard()
+                }
+            }
+        }
         .onAppear(perform: loadExistingLog)
         .sheet(isPresented: $showingSoftFoodLogSheet) {
             if let currentActiveLog = activeLog {
@@ -216,6 +224,10 @@ struct DayDetailView: View {
             temporaryLog = DailyLog(date: selectedDate) // Re-create temporary log using new defaults
             print("Log for \(selectedDate) deleted as all values were at default.")
         }
+    }
+    
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 

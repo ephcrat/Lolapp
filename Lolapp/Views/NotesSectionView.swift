@@ -23,14 +23,6 @@ struct NotesSectionView: View {
             .frame(minHeight: 100, maxHeight: 200)
             .scrollContentBackground(.hidden)
             .focused($isTextEditorFocused)
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") {
-                        isTextEditorFocused = false
-                    }
-                }
-            }
     }
 }
 

@@ -108,7 +108,7 @@ struct SoftFoodLogSheetView: View {
                 }
                 // Keyboard toolbar for the "Done" button
                 ToolbarItemGroup(placement: .keyboard) {
-                    Spacer() // Pushes the button to the right
+                    Spacer()
                     Button("Done") {
                         dismissKeyboard()
                     }
